@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="ctx" th:content="${#httpServletRequest.getContextPath()}" />
+    <title>Pseudonymizer</title>
+    <script type="text/javascript" th:src="@{/js/pseudonymization.js}"></script>
+    <script type="text/javascript" th:src="@{/js/jQuery/jquery-2.1.4.min.js}"></script>
+</head>
+<body>
+<div>
+    <label for="firstname">Firstname</label>
+    <input id="firstname" type="text"/>
+</div>
+<div>
+    <label for="lastname">Lastname</label>
+    <input id="lastname" type="text"/>
+</div>
+<div>
+    <label for="birthday">Birthday</label>
+    <input id="birthday" type="date">
+</div>
+<div>
+    <button onclick="execute()">Pseudonymize</button>
+</div>
+</body>
+<script>
+    var contextPath = /*[[@{/}]]*/ '';
+    function execute() {
+
+        let firstname = document.getElementById('firstname').value;
+        let lastname = document.getElementById('lastname').value;
+        let birthday = document.getElementById('birthday').value;
+        let pseudonym = PseudonymizationService.getPseudonym(firstname, lastname, birthday);
+        alert(pseudonym);
+    }
+</script>
+</html>
