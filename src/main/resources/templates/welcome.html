@@ -24,15 +24,22 @@
     <button onclick="execute()">Pseudonymize</button>
 </div>
 </body>
-<script>
-    var contextPath = /*[[@{/}]]*/ '';
-    function execute() {
+<!--/* The javascript block is processed by thymeleaf to replace the context path variable. */-->
+<!--/* That's why we have the th:inline attribute and the ugly CDATA block there. */-->
+<!--/* The expression /*[[foo]]*/ makes thymeleaf process 'foo', so here we evaluate @{/} which points to the root context path (eg. '/') */-->
+<script type="text/javascript" th:inline="javascript">
+    /*<![CDATA[*/
+    const contextPath = /*[[@{/}]]*/ '/';
 
+    function execute() {
         let firstname = document.getElementById('firstname').value;
         let lastname = document.getElementById('lastname').value;
         let birthday = document.getElementById('birthday').value;
+        // execute via pseudonymization.js
         let pseudonym = PseudonymizationService.getPseudonym(firstname, lastname, birthday);
+        // For now we just alert the result
         alert(pseudonym);
     }
+/*]]>*/
 </script>
 </html>

@@ -14,20 +14,19 @@ function PseudonymizationService() {
  * @returns {String} The pseudonym for the given data.
  */
 PseudonymizationService.getPseudonym = function (firstname, lastname, birthdate) {
+    var pseudonymizationUrl = contextPath + "pseudonymization/pseudonym";
     var birthDate = new Date(birthdate);
     var pseudonym;
     $.ajax({
         async: false,
-        crossDomain: true,
-        url: contextPath + "/pseudonymization/pseudonym",
+        url: pseudonymizationUrl,
         type: "GET",
         contentType: "application/json; charset=utf-8",
         error: function (jqXHR, textStatus, errorThrown) {
             var requestData = "vorname=" + firstname + "&nachname=" + lastname + "&geburtstag=" + birthDate.getDate() + "&geburtsmonat=" + birthDate.getMonth() + "&geburtsjahr=" + birthDate.getFullYear() + "&geburtsname=&plz=&ort=&sureness=true&anlegen=%2BPID%2Banfordern%2B";
             $.ajax({
                 async: false,
-                crossDomain: true,
-                url: contextPath + "/pseudonymization/pseudonym",
+                url: pseudonymizationUrl,
                 type: "GET",
                 data: requestData,
                 success: function (data) {
