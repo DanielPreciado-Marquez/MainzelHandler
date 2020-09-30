@@ -19,6 +19,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Controller that can talk to the Mainzelliste service.
+ * Its main purpose is to get a URL from the Mainzelliste that contains session and query tokens and is ready to be used
+ * to pseudonymize a patient.
+ *
+ * That way the pii (personally identifiable information) doesn't have to be sent to this controller and instead
+ * the client can do the pseudonymization themselves by sending the pii to the mainzelliste URL mentioned above.
+ *
+ * @see <a href="https://bitbucket.org/medicalinformatics/mainzelliste/src/master/">Mainzelliste Source Code</a>
+ */
 @RestController
 @CrossOrigin
 public class PseudonymizationController {
@@ -32,14 +42,14 @@ public class PseudonymizationController {
     private String mainzellisteApiKey;
 
     /**
-     * Handles the tokening with the psuedonymization server and returns the url
+     * Handles the tokening with the pseudonymization server and returns the url
      * with the appropriate token to get a pseudonym.
      *
      * @return The url with the appropriate token to get a pseudonym from the
      * pseudonymization service.
      */
     @RequestMapping(value = "/pseudonymization/pseudonym", method = RequestMethod.GET)
-    public String pseudo() {
+    public String getPseudonymizationURL() {
         HttpClient httpClient = HttpClientBuilder.create().build();
         String sessionURL = getSessionURL(httpClient);
         String tokenId = getTokenId(sessionURL, httpClient);

@@ -17,11 +17,14 @@ PseudonymizationService.getPseudonym = function (firstname, lastname, birthdate)
     var pseudonymizationUrl = contextPath + "pseudonymization/pseudonym";
     var birthDate = new Date(birthdate);
     var pseudonym;
+    // First make a call to the server to request a pseudonymization URL.
+    // This call will be answered by the PseudonymizationController class.
     $.ajax({
         async: false,
         url: pseudonymizationUrl,
         type: "GET",
         contentType: "application/json; charset=utf-8",
+        // In case of an error, make the same request again, but with request data for debugging.
         error: function (jqXHR, textStatus, errorThrown) {
             var requestData = "vorname=" + firstname + "&nachname=" + lastname + "&geburtstag=" + birthDate.getDate() + "&geburtsmonat=" + birthDate.getMonth() + "&geburtsjahr=" + birthDate.getFullYear() + "&geburtsname=&plz=&ort=&sureness=true&anlegen=%2BPID%2Banfordern%2B";
             $.ajax({
@@ -34,6 +37,7 @@ PseudonymizationService.getPseudonym = function (firstname, lastname, birthdate)
                 }
             });
         },
+        // In case of success, prepare the patient data for a request to the mainzelliste service.
         success: function (data) {
             var birthDay = (birthDate.getDate()).toString();
             var birthMonth = (birthDate.getMonth() + 1).toString();
@@ -47,6 +51,7 @@ PseudonymizationService.getPseudonym = function (firstname, lastname, birthdate)
             }
 
             var requestData = "vorname=" + firstname + "&nachname=" + lastname + "&geburtstag=" + birthDay + "&geburtsmonat=" + birthMonth + "&geburtsjahr=" + birthDate.getFullYear() + "&geburtsname=&plz=&ort=&sureness=true&anlegen=%2BPID%2Banfordern%2B";
+            // This request executes the pseudonymization and points to the URL returned by the first ajax call.
             $.ajax({
                 async: false,
                 crossDomain: true,
