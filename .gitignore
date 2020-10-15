@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Eclipse ###
+.metadata/
+.recommenders/
+
+### Local Testing/ Debugging ###
+pseudonymizer-app/logs/
+test-env/

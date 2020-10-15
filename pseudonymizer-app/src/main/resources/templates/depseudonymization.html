@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Pseudonymizer</title>
+    <script type="text/javascript" th:src="@{/js/depseudonymization.js}"></script>
+    <script type="text/javascript" th:src="@{/js/pseudonymizationService.js}"></script>
+</head>
+
+<body>
+    <div id="root">
+
+        <h1>Deseudonymisierung</h1>
+
+        <h2>Erstelle einen Patienten</h2>
+        <form id="patient-form">
+            <label for="key-input">Key:</label><br>
+            <input type="number" id="key-input"><br>
+
+            <label for="firstname-input">Vorname:</label><br>
+            <input type="text" id="firstname-input"><br>
+
+            <label for="lastname-input">Nachname:</label><br>
+            <input id="lastname-input" type="text"/><br>
+
+            <label for="birthday-input">Geburtstag:</label><br>
+            <input id="birthday-input" type="date"><br>
+
+            <input type="button" id="add-patient" value="Hinzufügen">
+            <p id="error" style="color: red;"></p>
+        </form>
+
+        <div>
+            <h2>Patienten:</h2>
+            <ul id="patient-list"></ul>
+        </div>
+
+        <button type="submit" id="search-button">Suchen</button>
+    </div>
+</body>
+<script type="text/javascript" th:inline="javascript">
+    const contextPath = /*[[@{/}]]*/ '/';
+</script>
+
+</html>
