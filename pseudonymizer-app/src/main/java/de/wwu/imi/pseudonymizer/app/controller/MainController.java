@@ -1,4 +1,4 @@
-package de.wwu.pseudonymizer.app.controller;
+package de.wwu.imi.pseudonymizer.app.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

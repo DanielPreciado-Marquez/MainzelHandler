@@ -1,4 +1,4 @@
-package de.wwu.pseudonymizer.app;
+package de.wwu.imi.pseudonymizer.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
