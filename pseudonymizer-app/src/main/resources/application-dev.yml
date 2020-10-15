@@ -1,0 +1,17 @@
+logging:
+    file:
+      name: G:/Programmieren/Bachelor-Arbeit/ba_daniel_preciado-marquez/pseudonymizer-app/logs/dpm-webserver.log
+    level:
+      root: INFO
+      de:
+        wwu:
+          imi: DEBUG
+
+server:
+  error:
+    include-stacktrace: ALWAYS
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/pseudonymizer_db
