@@ -50,17 +50,24 @@ function PseudonymizationService() {
 
 /**
  * The PatientStatus can have following values:
+ * -11: Some server side error appeared.
  * -1: The patient has an unsolved conflict.
  * 0: The patient got successful created and has valid IDAT.
  * 1: The pseudonym has benn created.
- * 2: The process, either storing or searching the MDAT, was successful.
+ * 11: The storing the MDAT was successful.
+ * 21: Patient was successfully found in the database.
+ * 22: There is no patient with the given IDAT.
  * @typedef {number} PatientStatus
  */
 const PatientStatus = Object.freeze({
+    SERVER_ERROR: -11,
     CONFLICT: -1,
     CREATED: 0,
     PSEUDONYMIZED: 1,
-    HANDLED: 2
+    SAVED: 11,
+    // TODO: Conflict with stored data? e.g. NOT_SAVED
+    FOUND: 21,
+    NOT_FOUND: 22,
 });
 
 /**
@@ -135,111 +142,109 @@ PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
 }
 
 /**
- * 
- * @param {Map<patientId, Patient>} patients 
- * @param {patientId[]} [patientIds] 
- */
-PseudonymizationService.getStatus = function (patients, patientIds) {
-
-    if (!patientIds) patientIds = Array.from(patients.keys());
-
-    const created = [];
-    const conflicts = [];
-    const pseudonymized = [];
-    const handled = [];
-
-    for (const key of patientIds) {
-        const patient = patients.get(key);
-        switch (patient.status) {
-            case PatientStatus.CREATED:
-                created.push(key);
-                break;
-
-            case PatientStatus.CONFLICT:
-                conflicts.push(key);
-                break;
-
-            case PatientStatus.PSEUDONYMIZED:
-                pseudonymized.push(key);
-                break;
-
-            case PatientStatus.HANDLED:
-                handled.push(key);
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    return { created, conflicts, pseudonymized, handled };
-}
-
-/**
  * Stores the given patients.
  * @param {Map<patientId, Patient>} patients - Map with the patients.
  * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be stored.
- * @param {boolean} [status] - Indicates the status of the given patients.
+ * @param {PatientStatus} [status] - Indicates the status of the given patients.
  */
 PseudonymizationService.storePatients = async function (patients, patientIds, status) {
     const handledIds = await handlePseudonymization(patients, patientIds, status);
-    upload(patients, handledIds);
+    await store(patients, handledIds);
 }
 
 /**
  * Searches the given patients.
  * @param {Map<patientId, Patient>} patients - Map with the patients.
- * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be stored.
- * @param {boolean} [status] - Indicates the status of the given patients.
+ * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be searched.
+ * @param {PatientStatus} [status] - Indicates the status of the given patients.
  */
 PseudonymizationService.searchPatients = async function (patients, patientIds, status) {
-    const handledIds = await handlePseudonymization(patients, patientIds, status);
-    search(patients, handledIds);
+    const pseudonymizedIds = await handlePseudonymization(patients, patientIds, status);
+    await search(patients, pseudonymizedIds);
 }
 
+/**
+ * Handles the pseudonymisation of the given Patients.
+ * If patientIds is null, every patient in the map will be handled.
+ * If the status is given, every patient to be handled must have this PatientStatus.
+ * Patients with status CREATED will be pseudonymized with createPseudonyms.
+ * Patients with status CONFLICT will be pseudonymized with resolveConflicts.
+ * Patients with status PSEUDONYMIZED be passed through.
+ * Every other status will be ignored.
+ * @param {Map<patientId, Patient>} patients - Map with the patients.
+ * @param {patientId[]} [patientIds] - Array of patientIds of the patients to get pseudonymized.
+ * @param {PatientStatus} [status] - Indicates the status of the given patients.
+ * @returns {Promise<patientId[]>} - Array with the patientIds of successful pseudonymized patients.
+ */
 async function handlePseudonymization(patients, patientIds, status) {
 
     if (!patientIds) patientIds = Array.from(patients.keys());
 
-    let handledIds;
+    let pseudonymizedIds;
 
     if (!status) {
-        let { created, conflicts, pseudonymized, handled } = PseudonymizationService.getStatus(patients, patientIds);
+        const created = [];
+        const conflicts = [];
+        let pseudonymized = [];
+
+        for (const key of patientIds) {
+            const patient = patients.get(key);
+            switch (patient.status) {
+                case PatientStatus.CREATED:
+                    created.push(key);
+                    break;
+
+                case PatientStatus.CONFLICT:
+                    conflicts.push(key);
+                    break;
+
+                case PatientStatus.PSEUDONYMIZED:
+                    pseudonymized.push(key);
+                    break;
+
+                default:
+                    break;
+            }
+        }
 
         pseudonymized = pseudonymized.concat((await PseudonymizationService.createPseudonyms(patients, created)).pseudonymized);
         pseudonymized = pseudonymized.concat((await PseudonymizationService.resolveConflicts(patients, conflicts)).pseudonymized);
 
-        handledIds = pseudonymized;
+        pseudonymizedIds = pseudonymized;
     } else {
         switch (status) {
             case PatientStatus.CREATED:
-                handledIds = (await PseudonymizationService.createPseudonyms(patients, patientIds)).pseudonymized;
+                pseudonymizedIds = (await PseudonymizationService.createPseudonyms(patients, patientIds)).pseudonymized;
                 break;
 
             case PatientStatus.CONFLICT:
-                handledIds =  (await PseudonymizationService.resolveConflicts(patients, patientIds)).pseudonymized;
+                pseudonymizedIds = (await PseudonymizationService.resolveConflicts(patients, patientIds)).pseudonymized;
                 break;
 
             case PatientStatus.PSEUDONYMIZED:
-                handledIds =  patientIds;
+                pseudonymizedIds = patientIds;
                 break;
 
-            case PatientStatus.HANDLED:
             default:
-                handledIds = [];
+                pseudonymizedIds = [];
                 break;
         }
     }
 
-    return handledIds;
+    return pseudonymizedIds;
 }
 
-async function upload(patients, patientIds) {
-
-    if (!patientIds) {
-        // TODO
-        return;
-    }
+/**
+ * Stores patients in the database.
+ * The patients must have a pseudonym.
+ * Needs the variable 'contextPath' with the url of the pseudonymization server.
+ *
+ * TODO: give response if the patient got stored successfully.
+ *
+ * @param {Map<patientId, Patient>} patients - Map with patients.
+ * @param {patientId[]} patientIds - Array of patientIds of the patients to be stored.
+ */
+async function store(patients, patientIds) {
 
     if (patientIds.length === 0) {
         return;
@@ -256,7 +261,6 @@ async function upload(patients, patientIds) {
         });
     }
 
-    //const contextPath = "/pseudonymizer/";
     const requestURL = contextPath + "api/patients/save";
 
     const options = {
@@ -273,16 +277,14 @@ async function upload(patients, patientIds) {
 }
 
 /**
- * 
- * @param {Map<patientId, Patient} patients 
- * @param {patientId[]} patientIds 
+/**
+ * Searches patients in the database and sets the mdat.
+ * The patients must have a pseudonym.
+ * Needs the variable 'contextPath' with the url of the pseudonymization server.
+ * @param {Map<patientId, Patient>} patients - Map with patients.
+ * @param {patientId[]} patientIds - Array of patientIds of the patients to get searched.
  */
 async function search(patients, patientIds) {
-
-    if (!patientIds) {
-        // TODO
-        return;
-    }
 
     if (patientIds.length === 0) {
         return;
@@ -294,7 +296,6 @@ async function search(patients, patientIds) {
         dataArray.push(patients.get(patientIds[i]).pseudonym);
     }
 
-    //const contextPath = "/pseudonymizer/";
     const requestURL = contextPath + "api/patients/load";
 
     const options = {
@@ -308,23 +309,26 @@ async function search(patients, patientIds) {
     const response = await fetch(requestURL, options).catch(error => console.error(error));
 
     const mdatArray = await response.json();
-    console.log(mdatArray);
 
-    // TODO: Not working
     for (let i = 0; i < mdatArray.length; i++) {
-        const mdatString = mdatArray[i];
         const patient = patients.get(patientIds[i]);
-        patient.mdat = JSON.parse(mdatString);
-        patient.status = PatientStatus.HANDLED;
-        console.log(mdatString);
+        const mdatString = mdatArray[i];
+
+        if (mdatString === "") {
+            patient.status = PatientStatus.NOT_FOUND;
+        } else {
+            patient.mdat = JSON.parse(mdatString);
+            patient.status = PatientStatus.FOUND;
+        }
     }
 }
 
 /**
  * Creates pseudonyms for the given patients.
- * @param {Map<patientId, Patient>} patients 
- * @param {patientId[]} [patientIds] Array of keys.
- * @returns {Promise<{pseudonymized: patientId[]; conflicts: patientId[];}>} 
+ * The patients must have the status CREATED.
+ * @param {Map<patientId, Patient>} patients - Map with patients.
+ * @param {patientId[]} [patientIds] - Array of patientIds of the patients to get pseudonymized.
+ * @returns {Promise<{pseudonymized: patientId[]; conflicts: patientId[];}>}
  */
 PseudonymizationService.createPseudonyms = async function (patients, patientIds) {
 
@@ -353,10 +357,11 @@ PseudonymizationService.createPseudonyms = async function (patients, patientIds)
 }
 
 /**
- * Resolves the conflicts of the patients.
- * @param {Map<patientId, Patient>} patients -
- * @param {patientId[]} [conflicts] -
- * @returns {Promise<{pseudonymized: patientId[]; conflicts: patientId[];}>} 
+ * Resolves conflicts of patients.
+ * The patients must have a conflict.
+ * @param {Map<patientId, Patient>} patients - Map with patients.
+ * @param {patientId[]} [conflicts] - Array of patientIds of the patients with conflicts to resolve.
+ * @returns {Promise<{pseudonymized: patientId[]; conflicts: patientId[];}>}
  */
 PseudonymizationService.resolveConflicts = async function (patients, patientIds) {
 
@@ -415,12 +420,10 @@ async function getPseudonymizationURL(amount) {
  * Sets the pseudonym for the given patient.
  * The URL can be crated with the getPseudonymizationURL function.
  * 
- * If the pseudonymisation was not successful, the pseudonym property will stay unchanged.
- * Instead a Conflict will be created.
+ * If the pseudonymisation was not successful, the pseudonym property will stay unchanged and a Conflict will be created.
  * @param {string} requestURL - URL for the pseudonymisation.
  * @param {Patient} patient - Patient to get pseudonymized.
  * @returns {Promise<boolean>} - Returns whether the pseudonymazaiton was successful or not.
- * @see getPseudonymizationURL
  */
 async function getPseudonym(requestURL, patient) {
 
