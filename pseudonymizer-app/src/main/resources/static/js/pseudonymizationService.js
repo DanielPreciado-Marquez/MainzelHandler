@@ -148,8 +148,8 @@ PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
  * @throws Throws an exception if the database is not available.
  */
 PseudonymizationService.storePatients = async function (patients, patientIds, status) {
-    const handledIds = await handlePseudonymization(patients, patientIds, status);
-    await store(patients, handledIds);
+    const pseudonymizedIds = await handlePseudonymization(patients, patientIds, status);
+    await store(patients, pseudonymizedIds);
 }
 
 /**
