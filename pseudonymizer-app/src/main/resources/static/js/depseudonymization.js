@@ -75,9 +75,15 @@ function updateList() {
                 addDeleteButton(key, listElement);
                 break;
 
-            case PatientStatus.HANDLED:
+            case PatientStatus.FOUND:
                 listElement.appendChild(document.createTextNode("key: " + key + ", status: Gefunden,  patient: " + JSON.stringify(patient.idat) + ", mdat:" + JSON.stringify(patient.mdat)));
                 addDeleteButton(key, listElement);
+                break;
+            case PatientStatus.NOT_FOUND:
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Nicht Gefunden,  patient: " + JSON.stringify(patient.idat)));
+                addDeleteButton(key, listElement);
+                break;
+            default:
                 break;
         }
 
