@@ -17,7 +17,10 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import de.wwu.imi.pseudonymizer.lib.entities.Patient;
+import de.wwu.imi.pseudonymizer.lib.exceptions.PseudonymizationServerException;
 import de.wwu.imi.pseudonymizer.lib.repositories.PatientRepository;
 
 /**
@@ -103,7 +107,7 @@ public class PseudonymizationController {
 		for (final String pseudonym : pseudonyms) {
 			LOGGER.debug("Searching: " + pseudonym);
 			final var patient = patientRepository.findById(pseudonym);
-			
+
 			if (patient.isPresent()) {
 				mdat.add(patient.get().getMdat());
 			} else {
@@ -123,20 +127,25 @@ public class PseudonymizationController {
 	 *         server.
 	 */
 	private String getSessionURL(final HttpClient httpClient) {
-		String connectionUrl = mainzellisteUrl + "sessions/";
-		HttpPost request = new HttpPost(connectionUrl);
-		request.addHeader("mainzellisteApiKey", mainzellisteApiKey);
-		try {
-			HttpResponse httpResponse = httpClient.execute(request);
-			InputStream connectionResponse = httpResponse.getEntity().getContent();
-			String response = IOUtils.toString(connectionResponse, StandardCharsets.UTF_8);
-			JSONObject jsonResponse = new JSONObject(response);
-			return jsonResponse.getString("uri");
+		final String connectionUrl = mainzellisteUrl + "sessions/";
 
+		final HttpPost request = new HttpPost(connectionUrl);
+		request.addHeader("mainzellisteApiKey", mainzellisteApiKey);
+
+		JSONObject jsonResponse;
+
+		try {
+			final HttpResponse httpResponse = httpClient.execute(request);
+			final InputStream connectionResponse = httpResponse.getEntity().getContent();
+			final String response = IOUtils.toString(connectionResponse, StandardCharsets.UTF_8);
+			jsonResponse = new JSONObject(response);
 		} catch (IOException exception) {
-			LOGGER.debug("Error while connecting to the pseudonymization server: {}", exception.getLocalizedMessage());
+			LOGGER.error("Error while connecting to the pseudonymization server: " + exception.getLocalizedMessage(),
+					exception);
+			throw new PseudonymizationServerException(exception.getLocalizedMessage(), exception);
 		}
-		return "";
+
+		return jsonResponse.getString("uri");
 	}
 
 	/**
@@ -149,25 +158,38 @@ public class PseudonymizationController {
 	 * @return The query token from the pseudonymization server.
 	 */
 	private String getTokenId(final String sessionUrl, final String tokenType, final HttpClient httpClient) {
-		String connectionUrl = sessionUrl + "tokens/";
-		HttpPost request = new HttpPost(connectionUrl);
+		final String connectionUrl = sessionUrl + "tokens/";
+
+		final HttpPost request = new HttpPost(connectionUrl);
 		request.addHeader("content-type", "application/json");
 		request.addHeader("mainzellisteApiKey", mainzellisteApiKey);
-		JSONObject type = new JSONObject();
-		JSONObject callback = new JSONObject();
+
+		final JSONObject type = new JSONObject();
+		final JSONObject callback = new JSONObject();
 		type.put("data", callback);
 		type.put("type", tokenType);
+
 		request.setEntity(new StringEntity(type.toString(), ContentType.APPLICATION_JSON));
+
+		JSONObject jsonResponse;
+
 		try {
-			HttpResponse httpResponse = httpClient.execute(request);
-			InputStream connectionResponse = httpResponse.getEntity().getContent();
-			String response = IOUtils.toString(connectionResponse, StandardCharsets.UTF_8);
-			JSONObject jsonResponse = new JSONObject(response);
-			return jsonResponse.getString("tokenId");
+			final HttpResponse httpResponse = httpClient.execute(request);
+			final InputStream connectionResponse = httpResponse.getEntity().getContent();
+			final String response = IOUtils.toString(connectionResponse, StandardCharsets.UTF_8);
+			jsonResponse = new JSONObject(response);
 		} catch (IOException exception) {
-			LOGGER.debug("Error while connecting to the pseudonymization server: {}", exception.getLocalizedMessage());
+			LOGGER.error("Error while connecting to the pseudonymization server: " + exception.getLocalizedMessage(),
+					exception);
+			throw new PseudonymizationServerException(exception.getLocalizedMessage(), exception);
 		}
-		return "";
+
+		return jsonResponse.getString("tokenId");
 	}
 
+	@ExceptionHandler(PseudonymizationServerException.class)
+	public ResponseEntity<Object> handlePseudonymizationServerException(
+			final PseudonymizationServerException exception) {
+		return new ResponseEntity<>(exception.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
+	}
 }
