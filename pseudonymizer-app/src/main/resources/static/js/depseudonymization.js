@@ -41,6 +41,8 @@ function createPatient() {
 }
 
 async function updatePseudonyms() {
+    document.getElementById("server-error").innerHTML = "";
+
     try {
         await PseudonymizationService.searchPatients(patients);
     } catch (error) {
@@ -69,7 +71,9 @@ function updateList() {
                 break;
 
             case PatientStatus.PSEUDONYMIZED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ok,  patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Pseudonymisiert,  patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
+                addSearchButton(key, listElement);
+                addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
 
@@ -158,7 +162,14 @@ function addSearchButton(key, listElement) {
     pseuButton.innerText = "Suche";
 
     pseuButton.addEventListener("click", async () => {
-        await PseudonymizationService.searchPatients(patients, [key]);
+        document.getElementById("server-error").innerHTML = "";
+
+        try {
+            await PseudonymizationService.searchPatients(patients, [key]);
+        } catch (error) {
+            document.getElementById("server-error").innerHTML = error;
+        }
+
         updateList();
     });
 
