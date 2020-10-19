@@ -116,7 +116,7 @@ PseudonymizationService.createPatient = function (firstname, lastname, birthday,
 
 /**
  * Validates Updates the IDAT of the given patient.
- * If the given IDAT is different from the current one, the pseudonym well be reset and the status will be set to CREATED.
+ * If the given IDAT is different from the current one and the patient has a pseudonym, the pseudonym well be reset and the status will be set to CREATED.
  * @param {Patient} patient - Patient to update.
  * @param {string} firstname - Firstname of the patient.
  * @param {string} lastname - Lastname of the patient.
