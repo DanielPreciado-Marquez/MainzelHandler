@@ -42,7 +42,7 @@ function createPatient() {
 
 async function updatePseudonyms() {
     try {
-        await PseudonymizationService.searchPatients(patients);
+        await PseudonymizationService.storePatients(patients);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error;
     }
