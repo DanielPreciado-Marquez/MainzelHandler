@@ -473,6 +473,8 @@ async function getPseudonym(requestURL, patient) {
 
     switch (response.status) {
         case 400:
+            // This case should never be true.
+            // Invalid IDAT should be detected by createIDAT.
             patient.conflict.statusCode = ConflictStatus.IDAT_INVALID;
             patient.conflict.statusMessage = await response.text();
             patient.conflict.tokenURL = requestURL;
