@@ -37,11 +37,16 @@ function createPatient() {
     }
 
     const statusMessage = idat.statusMessage;
-    document.getElementById("error").innerHTML = statusMessage;
+    document.getElementById("idat-error").innerHTML = statusMessage;
 }
 
 async function updatePseudonyms() {
-    await PseudonymizationService.searchPatients(patients);
+    try {
+        await PseudonymizationService.searchPatients(patients);
+    } catch (error) {
+        document.getElementById("server-error").innerHTML = error;
+    }
+
     updateList();
 }
 
