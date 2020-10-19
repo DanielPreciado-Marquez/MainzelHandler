@@ -14,30 +14,30 @@ window.onload = function () {
 }
 
 function createPatient() {
+
     const patientForm = document.getElementById("patient-form");
+    const key = parseInt(patientForm["key-input"].value);
 
-    const idat = PseudonymizationService.createIDAT(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
-
-    if (idat.valid) {
-
-        const key = parseInt(patientForm["key-input"].value);
-
-        if (patients.has(key)) {
-            patients.get(key).idat = idat.idat;
+    try {
+        if (key !== "" && patients.has(key)) {
+            const patient = patients.get(key);
+            PseudonymizationService.updateIDAT(patient, patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
         } else {
-            const patient = PseudonymizationService.createPatient(idat.idat, {});
+            const patient = PseudonymizationService.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value, { height: 180 });
             patients.set(nextKey++, patient);
         }
+
+        document.getElementById("idat-error").innerHTML = "";
 
         patientForm["key-input"].value = "";
         patientForm["firstname-input"].value = "";
         patientForm["lastname-input"].value = "";
         patientForm["birthday-input"].value = "";
-        updateList();
-    }
 
-    const statusMessage = idat.statusMessage;
-    document.getElementById("idat-error").innerHTML = statusMessage;
+        updateList();
+    } catch (error) {
+        document.getElementById("idat-error").innerHTML = error;
+    }
 }
 
 async function updatePseudonyms() {

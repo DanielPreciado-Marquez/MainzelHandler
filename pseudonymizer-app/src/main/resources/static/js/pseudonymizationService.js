@@ -85,11 +85,19 @@ const ConflictStatus = Object.freeze({
 
 /**
  * Creates a new Patient.
- * @param {IDAT} idat - IDAT of the Patient. Can be created with {@link PseudonymizationService.createIDAT}.
- * @param {Object} mdat - MDAT of the Patient. For now, every Object is valid.
+ * Validates the idat.
+ * @param {string} firstname - Firstname of the patient.
+ * @param {string} lastname - Lastname of the patient.
+ * @param {string | number | Date} birthday - Birthday of the patient.
+ * @param {Object} [mdat={}] - MDAT of the Patient. For now, every Object is valid. Default is an empty object.
  * @returns {Patient} - The patient.
+ * @throws Throws an exception if the IDAT is not valid.
  */
-PseudonymizationService.createPatient = function (idat, mdat) {
+PseudonymizationService.createPatient = function (firstname, lastname, birthday, mdat) {
+
+    const idat = this.createIDAT(firstname, lastname, birthday);
+
+    if (!mdat) mdat = {};
 
     const patient = {
         status: PatientStatus.CREATED,
@@ -104,11 +112,25 @@ PseudonymizationService.createPatient = function (idat, mdat) {
 }
 
 /**
- * Creates a new IDAT Object and validates the data.
- * @param {string} firstname - First name of the patient.
- * @param {string} lastname - Lat name of the patient.
+ * Validates Updates the IDAT of the given patient.
+ * @param {Patient} patient - Patient to update.
+ * @param {string} firstname - Firstname of the patient.
+ * @param {string} lastname - Lastname of the patient.
  * @param {string | number | Date} birthday - Birthday of the patient.
- * @returns {{idat: IDAT; valid: boolean; statusMessage: string;}}
+ * @throws Throws an exception if the IDAT is not valid.
+ */
+PseudonymizationService.updateIDAT = function (patient, firstname, lastname, birthday) {
+    const idat = this.createIDAT(firstname, lastname, birthday);
+    patient.idat = idat;
+}
+
+/**
+ * Creates a new IDAT Object and validates the data.
+ * @param {string} firstname - Firstname of the patient.
+ * @param {string} lastname - Lastname of the patient.
+ * @param {string | number | Date} birthday - Birthday of the patient.
+ * @returns {IDAT} - Validated IDAT.
+ * @throws Throws an exception if the IDAT is not valid.
  */
 PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
 
@@ -116,19 +138,9 @@ PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
     lastname = lastname.trim();
     birthday = new Date(birthday);
 
-    let valid = true;
-    let statusMessage = "";
-
-    if (firstname === "") {
-        statusMessage = "Kein Vorname!";
-        valid = false;
-    } else if (lastname === "") {
-        statusMessage = "Kein Nachname!";
-        valid = false;
-    } else if (isNaN(birthday)) {
-        statusMessage = "Kein gültiger Geburtstag!";
-        valid = false;
-    }
+    if (firstname === "") throw "Firstname is required!";
+    if (lastname === "") throw "Lastname is required!";
+    if (isNaN(birthday)) throw "Invalid birthday!";
 
     const idat = {
         firstname: firstname,
@@ -136,7 +148,7 @@ PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
         birthday: birthday
     };
 
-    return { idat, valid, statusMessage };
+    return idat;
 }
 
 /**
