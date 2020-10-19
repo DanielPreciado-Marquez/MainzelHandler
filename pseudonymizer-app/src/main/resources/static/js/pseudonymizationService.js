@@ -59,6 +59,9 @@ function PseudonymizationService() {
  * @typedef {number} PatientStatus
  */
 const PatientStatus = Object.freeze({
+    IDAT_CONFLICT: -3,
+    TOKEN_INVALID: -2,
+    IDAT_INVALID: -1,
     CONFLICT: -1,
     CREATED: 0,
     PSEUDONYMIZED: 1,
@@ -113,6 +116,7 @@ PseudonymizationService.createPatient = function (firstname, lastname, birthday,
 
 /**
  * Validates Updates the IDAT of the given patient.
+ * If the given IDAT is different from the current one, the pseudonym well be reset and the status will be set to CREATED.
  * @param {Patient} patient - Patient to update.
  * @param {string} firstname - Firstname of the patient.
  * @param {string} lastname - Lastname of the patient.
@@ -120,8 +124,25 @@ PseudonymizationService.createPatient = function (firstname, lastname, birthday,
  * @throws Throws an exception if the IDAT is not valid.
  */
 PseudonymizationService.updateIDAT = function (patient, firstname, lastname, birthday) {
+
     const idat = this.createIDAT(firstname, lastname, birthday);
-    patient.idat = idat;
+
+    for (const key in patient.idat) {
+        let equal = true;
+
+        if (patient.idat[key] instanceof Date) {
+            equal = (patient.idat[key].getTime() === idat[key].getTime());
+        } else {
+            equal = (patient.idat[key] === idat[key]);
+        }
+
+        if (!equal) {
+            patient.idat = idat;
+            patient.pseudonym = null;
+            patient.status = PatientStatus.CREATED;
+            return;
+        }
+    }
 }
 
 /**
