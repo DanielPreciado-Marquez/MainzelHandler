@@ -127,22 +127,25 @@ PseudonymizationService.updateIDAT = function (patient, firstname, lastname, bir
 
     const idat = this.createIDAT(firstname, lastname, birthday);
 
-    for (const key in patient.idat) {
-        let equal = true;
+    if (patient.status > 0) {
+        for (const key in patient.idat) {
+            let equal = true;
 
-        if (patient.idat[key] instanceof Date) {
-            equal = (patient.idat[key].getTime() === idat[key].getTime());
-        } else {
-            equal = (patient.idat[key] === idat[key]);
-        }
+            if (patient.idat[key] instanceof Date) {
+                equal = (patient.idat[key].getTime() === idat[key].getTime());
+            } else {
+                equal = (patient.idat[key] === idat[key]);
+            }
 
-        if (!equal) {
-            patient.idat = idat;
-            patient.pseudonym = null;
-            patient.status = PatientStatus.CREATED;
-            return;
+            if (!equal) {
+                patient.pseudonym = null;
+                patient.status = PatientStatus.CREATED;
+                break;
+            }
         }
     }
+
+    patient.idat = idat;
 }
 
 /**
