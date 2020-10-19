@@ -145,6 +145,7 @@ PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
  * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be stored.
  * @param {PatientStatus} [status] - Indicates the status of the given patients.
  * @throws Throws an exception if the pseudonymization server is not available.
+ * @throws Throws an exception if the database is not available.
  */
 PseudonymizationService.storePatients = async function (patients, patientIds, status) {
     const handledIds = await handlePseudonymization(patients, patientIds, status);
@@ -157,6 +158,7 @@ PseudonymizationService.storePatients = async function (patients, patientIds, st
  * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be searched.
  * @param {PatientStatus} [status] - Indicates the status of the given patients.
  * @throws Throws an exception if the pseudonymization server is not available.
+ * @throws Throws an exception if the database is not available.
  */
 PseudonymizationService.searchPatients = async function (patients, patientIds, status) {
     const pseudonymizedIds = await handlePseudonymization(patients, patientIds, status);
@@ -244,6 +246,7 @@ async function handlePseudonymization(patients, patientIds, status) {
  *
  * @param {Map<patientId, Patient>} patients - Map with patients.
  * @param {patientId[]} patientIds - Array of patientIds of the patients to be stored.
+ * @throws Throws an exception if the database is not available.
  */
 async function store(patients, patientIds) {
 
@@ -272,7 +275,9 @@ async function store(patients, patientIds) {
         body: JSON.stringify(dataArray)
     };
 
-    const response = await fetch(requestURL, options).catch(error => console.error(error));
+    const response = await fetch(requestURL, options);
+
+    if (typeof response === 'undefined' || !response.ok) throw "Database not available";
 
     // TODO: is a response form the server necessary?
 }
@@ -284,6 +289,7 @@ async function store(patients, patientIds) {
  * Needs the variable 'contextPath' with the url of the pseudonymization server.
  * @param {Map<patientId, Patient>} patients - Map with patients.
  * @param {patientId[]} patientIds - Array of patientIds of the patients to get searched.
+ * @throws Throws an exception if the database is not available.
  */
 async function search(patients, patientIds) {
 
@@ -307,7 +313,9 @@ async function search(patients, patientIds) {
         body: JSON.stringify(dataArray)
     };
 
-    const response = await fetch(requestURL, options).catch(error => console.error(error));
+    const response = await fetch(requestURL, options);
+
+    if (typeof response === 'undefined' || !response.ok) throw "Database not available";
 
     const mdatArray = await response.json();
 
