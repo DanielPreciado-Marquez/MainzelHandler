@@ -62,7 +62,7 @@ function updateList() {
 
         switch (patient.status) {
             case PatientStatus.CREATED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ausstehend,  patient: " + JSON.stringify(patient.idat) + ", sureness: " + patient.sureness));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ausstehend, patient: " + JSON.stringify(patient.idat) + ", sureness: " + patient.sureness));
                 addPseudonymizeButton(key, listElement);
                 addEditButton(key, listElement);
                 addSureButton(key, listElement);
@@ -70,12 +70,14 @@ function updateList() {
                 break;
 
             case PatientStatus.PSEUDONYMIZED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ok,  patient: " + JSON.stringify(patient.idat) + ", sureness: " + patient.sureness + ", pseudonym: " + patient.pseudonym));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Pseudonymisiert, patient: " + JSON.stringify(patient.idat) + ", sureness: " + patient.sureness + ", pseudonym: " + patient.pseudonym));
                 addDeleteButton(key, listElement);
                 break;
 
-            case PatientStatus.CONFLICT:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Konflikt,  patient: " + JSON.stringify(patient.idat) + ", sureness: " + patient.sureness + ", conflict: " + patient.conflict.statusMessage));
+            case PatientStatus.IDAT_CONFLICT:
+            case PatientStatus.TOKEN_INVALID:
+            case PatientStatus.IDAT_INVALID:
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Konflikt, patient: " + JSON.stringify(patient.idat) + ", sureness: " + patient.sureness + ", conflict: " + patient.status));
                 addRetryButton(key, listElement);
                 addEditButton(key, listElement);
                 addSureButton(key, listElement);
@@ -150,7 +152,14 @@ function addRetryButton(key, listElement) {
     retryButton.innerText = "retry";
 
     retryButton.addEventListener("click", async () => {
-        await PseudonymizationService.storePatients(patients, [key], PatientStatus.CONFLICT);
+        document.getElementById("server-error").innerHTML = "";
+
+        try {
+            await PseudonymizationService.storePatients(patients, [key], patients.get(key).status);
+        } catch (error) {
+            document.getElementById("server-error").innerHTML = error;
+        }
+
         updateList();
     });
 
@@ -162,7 +171,14 @@ function addPseudonymizeButton(key, listElement) {
     pseuButton.innerText = "Store";
 
     pseuButton.addEventListener("click", async () => {
-        await PseudonymizationService.storePatients(patients, [key]);
+        document.getElementById("server-error").innerHTML = "";
+
+        try {
+            await PseudonymizationService.storePatients(patients, [key]);
+        } catch (error) {
+            document.getElementById("server-error").innerHTML = error;
+        }
+    
         updateList();
     });
 

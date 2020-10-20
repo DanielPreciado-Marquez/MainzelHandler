@@ -64,34 +64,38 @@ function updateList() {
 
         switch (patient.status) {
             case PatientStatus.CREATED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ausstehend,  patient: " + JSON.stringify(patient.idat)));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ausstehend, patient: " + JSON.stringify(patient.idat)));
                 addSearchButton(key, listElement);
                 addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
 
             case PatientStatus.PSEUDONYMIZED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Pseudonymisiert,  patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Pseudonymisiert, patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
                 addSearchButton(key, listElement);
                 addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
 
-            case PatientStatus.CONFLICT:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Konflikt,  patient: " + JSON.stringify(patient.idat) + ", conflict: " + patient.conflict.statusMessage));
+            case PatientStatus.IDAT_CONFLICT:
+            case PatientStatus.TOKEN_INVALID:
+            case PatientStatus.IDAT_INVALID:
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Konflikt, patient: " + JSON.stringify(patient.idat) + ", conflict: " + patient.status));
                 addRetryButton(key, listElement);
                 addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
 
             case PatientStatus.FOUND:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gefunden,  patient: " + JSON.stringify(patient.idat) + ", mdat:" + JSON.stringify(patient.mdat)));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gefunden, patient: " + JSON.stringify(patient.idat) + ", mdat:" + JSON.stringify(patient.mdat)));
                 addDeleteButton(key, listElement);
                 break;
+
             case PatientStatus.NOT_FOUND:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Nicht Gefunden,  patient: " + JSON.stringify(patient.idat)));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Nicht Gefunden, patient: " + JSON.stringify(patient.idat)));
                 addDeleteButton(key, listElement);
                 break;
+
             default:
                 break;
         }
@@ -150,7 +154,14 @@ function addRetryButton(key, listElement) {
     retryButton.innerText = "retry";
 
     retryButton.addEventListener("click", async () => {
-        await PseudonymizationService.searchPatients(patients, [key], PatientStatus.CONFLICT);
+        document.getElementById("server-error").innerHTML = "";
+
+        try {
+            await PseudonymizationService.searchPatients(patients, [key], patients.get(key).status);
+        } catch (error) {
+            document.getElementById("server-error").innerHTML = error;
+        }
+
         updateList();
     });
 

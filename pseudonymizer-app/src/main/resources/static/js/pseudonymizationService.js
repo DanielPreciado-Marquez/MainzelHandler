@@ -24,14 +24,6 @@ function PseudonymizationService() {
  */
 
 /**
- * Object containing all informations about an occurring conflict.
- * @typedef {Object} Conflict
- * @property {ConflictStatus} statusCode ConflictStatus of this conflict.
- * @property {string} statusMessage Message containing detailed informations about the conflict.
- * @property {string} tokenURL Token used for the pseudonymization attempt. Can be reused until the conflict is resolved.
- */
-
-/**
  * Object representing a patient.
  * @typedef {Object} Patient
  * @property {PatientStatus} status Status of the pseudonymization.
@@ -39,7 +31,7 @@ function PseudonymizationService() {
  * @property {string} pseudonym Pseudonym of this patient. null until it got created via createPseudonyms.
  * @property {IDAT} idat IDAT of this patient.
  * @property {MDAT} mdat MDAT of this patient. May be null.
- * @property {Conflict} conflict Most recent conflict. null if no conflict occurred.
+ * @property {string} tokenURL Token used for the pseudonymization attempt. Can be reused until the conflict is resolved.
  */
 
 /**
@@ -62,28 +54,12 @@ const PatientStatus = Object.freeze({
     IDAT_CONFLICT: -3,
     TOKEN_INVALID: -2,
     IDAT_INVALID: -1,
-    CONFLICT: -1,
     CREATED: 0,
     PSEUDONYMIZED: 1,
     SAVED: 11,
     // TODO: Conflict with stored data? e.g. NOT_SAVED
     FOUND: 21,
     NOT_FOUND: 22,
-});
-
-/**
- * The ConflictStatus can have following values:
- * 1: unknown error without detailed informations
- * 2: invalid idat
- * 3: invalid token
- * 4: conflicting idat
- * @typedef {number} ConflictStatus
- */
-const ConflictStatus = Object.freeze({
-    UNKNOWN: 1,
-    IDAT_INVALID: 2,
-    TOKEN_INVALID: 3,
-    IDAT_CONFLICT: 4
 });
 
 /**
@@ -233,7 +209,9 @@ async function handlePseudonymization(patients, patientIds, status) {
                     created.push(key);
                     break;
 
-                case PatientStatus.CONFLICT:
+                case PatientStatus.IDAT_CONFLICT:
+                case PatientStatus.TOKEN_INVALID:
+                case PatientStatus.IDAT_INVALID:
                     conflicts.push(key);
                     break;
 
@@ -256,7 +234,9 @@ async function handlePseudonymization(patients, patientIds, status) {
                 pseudonymizedIds = (await PseudonymizationService.createPseudonyms(patients, patientIds)).pseudonymized;
                 break;
 
-            case PatientStatus.CONFLICT:
+            case PatientStatus.IDAT_CONFLICT:
+            case PatientStatus.TOKEN_INVALID:
+            case PatientStatus.IDAT_INVALID:
                 pseudonymizedIds = (await PseudonymizationService.resolveConflicts(patients, patientIds)).pseudonymized;
                 break;
 
@@ -420,10 +400,10 @@ PseudonymizationService.resolveConflicts = async function (patients, patientIds)
     for (const key of patientIds) {
         const patient = patients.get(key);
 
-        if (patient.conflict.statusCode === ConflictStatus.TOKEN_INVALID) {
+        if (patient.statusCode === PatientStatus.TOKEN_INVALID) {
             invalidTokens.push(key);
         } else {
-            const success = await getPseudonym(patient.conflict.tokenURL, patient);
+            const success = await getPseudonym(patient.tokenURL, patient);
 
             if (success) {
                 pseudonymized.push(key);
@@ -506,41 +486,34 @@ async function getPseudonym(requestURL, patient) {
 
     const response = await fetch(requestURL, options);
 
-    patient.status = PatientStatus.CONFLICT;
-    patient.conflict = {};
-
-    if (typeof response === 'undefined') {
-        patient.conflict.statusCode = ConflictStatus.UNKNOWN;
-        patient.conflict.statusMessage = "Unexpected error!";
-        patient.conflict.tokenURL = requestURL;
-    }
+    if (typeof response === "undefined") throw "Can't connect to Mainzelliste!";
 
     switch (response.status) {
         case 400:
+            // IDAT is invalid
             // This case should never be true.
             // Invalid IDAT should be detected by createIDAT.
-            patient.conflict.statusCode = ConflictStatus.IDAT_INVALID;
-            patient.conflict.statusMessage = await response.text();
-            patient.conflict.tokenURL = requestURL;
+            patient.status = PatientStatus.IDAT_INVALID;
+            patient.tokenURL = requestURL;
             break;
 
         case 401:
-            patient.conflict.statusCode = ConflictStatus.TOKEN_INVALID;
-            patient.conflict.statusMessage = "Invalid token";
-            patient.conflict.tokenURL = null;
+            // The token is invalid
+            patient.status = PatientStatus.TOKEN_INVALID;
+            patient.tokenURL = null;
             break;
 
         case 409:
-            patient.conflict.statusCode = ConflictStatus.IDAT_CONFLICT;
-            patient.conflict.statusMessage = "Conflict detected";
-            patient.conflict.tokenURL = requestURL;
+            // Conflicting IDAT
+            patient.status = PatientStatus.IDAT_CONFLICT;
+            patient.tokenURL = requestURL;
             break;
 
         default:
             const responseBody = await response.json();
             patient.pseudonym = responseBody.newId;
             patient.status = PatientStatus.PSEUDONYMIZED;
-            patient.conflict = null;
+            patient.tokenURL = null;
     }
 
     return (patient.status === PatientStatus.PSEUDONYMIZED);
