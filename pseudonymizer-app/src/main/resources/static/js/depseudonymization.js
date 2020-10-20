@@ -14,34 +14,41 @@ window.onload = function () {
 }
 
 function createPatient() {
+
     const patientForm = document.getElementById("patient-form");
+    const key = parseInt(patientForm["key-input"].value);
 
-    const idat = PseudonymizationService.createIDAT(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
-
-    if (idat.valid) {
-
-        const key = parseInt(patientForm["key-input"].value);
-
-        if (patients.has(key)) {
-            patients.get(key).idat = idat.idat;
+    try {
+        if (key !== "" && patients.has(key)) {
+            const patient = patients.get(key);
+            PseudonymizationService.updateIDAT(patient, patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
         } else {
-            const patient = PseudonymizationService.createPatient(idat.idat, {});
+            const patient = PseudonymizationService.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value, { height: 180 });
             patients.set(nextKey++, patient);
         }
+
+        document.getElementById("idat-error").innerHTML = "";
 
         patientForm["key-input"].value = "";
         patientForm["firstname-input"].value = "";
         patientForm["lastname-input"].value = "";
         patientForm["birthday-input"].value = "";
-        updateList();
-    }
 
-    const statusMessage = idat.statusMessage;
-    document.getElementById("error").innerHTML = statusMessage;
+        updateList();
+    } catch (error) {
+        document.getElementById("idat-error").innerHTML = error;
+    }
 }
 
 async function updatePseudonyms() {
-    await PseudonymizationService.searchPatients(patients);
+    document.getElementById("server-error").innerHTML = "";
+
+    try {
+        await PseudonymizationService.searchPatients(patients);
+    } catch (error) {
+        document.getElementById("server-error").innerHTML = error;
+    }
+
     updateList();
 }
 
@@ -57,32 +64,38 @@ function updateList() {
 
         switch (patient.status) {
             case PatientStatus.CREATED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ausstehend,  patient: " + JSON.stringify(patient.idat)));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ausstehend, patient: " + JSON.stringify(patient.idat)));
                 addSearchButton(key, listElement);
                 addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
 
             case PatientStatus.PSEUDONYMIZED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ok,  patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Pseudonymisiert, patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
+                addSearchButton(key, listElement);
+                addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
 
-            case PatientStatus.CONFLICT:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Konflikt,  patient: " + JSON.stringify(patient.idat) + ", conflict: " + patient.conflict.statusMessage));
+            case PatientStatus.IDAT_CONFLICT:
+            case PatientStatus.TOKEN_INVALID:
+            case PatientStatus.IDAT_INVALID:
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Konflikt, patient: " + JSON.stringify(patient.idat) + ", conflict: " + patient.status));
                 addRetryButton(key, listElement);
                 addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
 
             case PatientStatus.FOUND:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gefunden,  patient: " + JSON.stringify(patient.idat) + ", mdat:" + JSON.stringify(patient.mdat)));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gefunden, patient: " + JSON.stringify(patient.idat) + ", mdat:" + JSON.stringify(patient.mdat)));
                 addDeleteButton(key, listElement);
                 break;
+
             case PatientStatus.NOT_FOUND:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Nicht Gefunden,  patient: " + JSON.stringify(patient.idat)));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Nicht Gefunden, patient: " + JSON.stringify(patient.idat)));
                 addDeleteButton(key, listElement);
                 break;
+
             default:
                 break;
         }
@@ -141,7 +154,14 @@ function addRetryButton(key, listElement) {
     retryButton.innerText = "retry";
 
     retryButton.addEventListener("click", async () => {
-        await PseudonymizationService.searchPatients(patients, [key], PatientStatus.CONFLICT);
+        document.getElementById("server-error").innerHTML = "";
+
+        try {
+            await PseudonymizationService.searchPatients(patients, [key], patients.get(key).status);
+        } catch (error) {
+            document.getElementById("server-error").innerHTML = error;
+        }
+
         updateList();
     });
 
@@ -153,7 +173,14 @@ function addSearchButton(key, listElement) {
     pseuButton.innerText = "Suche";
 
     pseuButton.addEventListener("click", async () => {
-        await PseudonymizationService.searchPatients(patients, [key]);
+        document.getElementById("server-error").innerHTML = "";
+
+        try {
+            await PseudonymizationService.searchPatients(patients, [key]);
+        } catch (error) {
+            document.getElementById("server-error").innerHTML = error;
+        }
+
         updateList();
     });
 

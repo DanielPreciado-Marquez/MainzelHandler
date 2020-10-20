@@ -24,14 +24,6 @@ function PseudonymizationService() {
  */
 
 /**
- * Object containing all informations about an occurring conflict.
- * @typedef {Object} Conflict
- * @property {ConflictStatus} statusCode ConflictStatus of this conflict.
- * @property {string} statusMessage Message containing detailed informations about the conflict.
- * @property {string} tokenURL Token used for the pseudonymization attempt. Can be reused until the conflict is resolved.
- */
-
-/**
  * Object representing a patient.
  * @typedef {Object} Patient
  * @property {PatientStatus} status Status of the pseudonymization.
@@ -39,7 +31,7 @@ function PseudonymizationService() {
  * @property {string} pseudonym Pseudonym of this patient. null until it got created via createPseudonyms.
  * @property {IDAT} idat IDAT of this patient.
  * @property {MDAT} mdat MDAT of this patient. May be null.
- * @property {Conflict} conflict Most recent conflict. null if no conflict occurred.
+ * @property {string} tokenURL Token used for the pseudonymization attempt. Can be reused until the conflict is resolved.
  */
 
 /**
@@ -50,7 +42,6 @@ function PseudonymizationService() {
 
 /**
  * The PatientStatus can have following values:
- * -11: Some server side error appeared.
  * -1: The patient has an unsolved conflict.
  * 0: The patient got successful created and has valid IDAT.
  * 1: The pseudonym has benn created.
@@ -60,8 +51,9 @@ function PseudonymizationService() {
  * @typedef {number} PatientStatus
  */
 const PatientStatus = Object.freeze({
-    SERVER_ERROR: -11,
-    CONFLICT: -1,
+    IDAT_CONFLICT: -3,
+    TOKEN_INVALID: -2,
+    IDAT_INVALID: -1,
     CREATED: 0,
     PSEUDONYMIZED: 1,
     SAVED: 11,
@@ -71,27 +63,20 @@ const PatientStatus = Object.freeze({
 });
 
 /**
- * The ConflictStatus can have following values:
- * 1: unknown error without detailed informations
- * 2: invalid idat
- * 3: invalid token
- * 4: conflicting idat
- * @typedef {number} ConflictStatus
- */
-const ConflictStatus = Object.freeze({
-    UNKNOWN: 1,
-    IDAT_INVALID: 2,
-    TOKEN_INVALID: 3,
-    IDAT_CONFLICT: 4
-});
-
-/**
  * Creates a new Patient.
- * @param {IDAT} idat - IDAT of the Patient. Can be created with {@link PseudonymizationService.createIDAT}.
- * @param {Object} mdat - MDAT of the Patient. For now, every Object is valid.
+ * Validates the idat.
+ * @param {string} firstname - Firstname of the patient.
+ * @param {string} lastname - Lastname of the patient.
+ * @param {string | number | Date} birthday - Birthday of the patient.
+ * @param {Object} [mdat={}] - MDAT of the Patient. For now, every Object is valid. Default is an empty object.
  * @returns {Patient} - The patient.
+ * @throws Throws an exception if the IDAT is not valid.
  */
-PseudonymizationService.createPatient = function (idat, mdat) {
+PseudonymizationService.createPatient = function (firstname, lastname, birthday, mdat) {
+
+    const idat = this.createIDAT(firstname, lastname, birthday);
+
+    if (!mdat) mdat = {};
 
     const patient = {
         status: PatientStatus.CREATED,
@@ -106,11 +91,46 @@ PseudonymizationService.createPatient = function (idat, mdat) {
 }
 
 /**
- * Creates a new IDAT Object and validates the data.
- * @param {string} firstname - First name of the patient.
- * @param {string} lastname - Lat name of the patient.
+ * Validates Updates the IDAT of the given patient.
+ * If the given IDAT is different from the current one and the patient has a pseudonym, the pseudonym well be reset and the status will be set to CREATED.
+ * @param {Patient} patient - Patient to update.
+ * @param {string} firstname - Firstname of the patient.
+ * @param {string} lastname - Lastname of the patient.
  * @param {string | number | Date} birthday - Birthday of the patient.
- * @returns {{idat: IDAT; valid: boolean; statusMessage: string;}}
+ * @throws Throws an exception if the IDAT is not valid.
+ */
+PseudonymizationService.updateIDAT = function (patient, firstname, lastname, birthday) {
+
+    const idat = this.createIDAT(firstname, lastname, birthday);
+
+    if (patient.status > 0) {
+        for (const key in patient.idat) {
+            let equal = true;
+
+            if (patient.idat[key] instanceof Date) {
+                equal = (patient.idat[key].getTime() === idat[key].getTime());
+            } else {
+                equal = (patient.idat[key] === idat[key]);
+            }
+
+            if (!equal) {
+                patient.pseudonym = null;
+                patient.status = PatientStatus.CREATED;
+                break;
+            }
+        }
+    }
+
+    patient.idat = idat;
+}
+
+/**
+ * Creates a new IDAT Object and validates the data.
+ * @param {string} firstname - Firstname of the patient.
+ * @param {string} lastname - Lastname of the patient.
+ * @param {string | number | Date} birthday - Birthday of the patient.
+ * @returns {IDAT} - Validated IDAT.
+ * @throws Throws an exception if the IDAT is not valid.
  */
 PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
 
@@ -118,19 +138,9 @@ PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
     lastname = lastname.trim();
     birthday = new Date(birthday);
 
-    let valid = true;
-    let statusMessage = "";
-
-    if (firstname === "") {
-        statusMessage = "Kein Vorname!";
-        valid = false;
-    } else if (lastname === "") {
-        statusMessage = "Kein Nachname!";
-        valid = false;
-    } else if (isNaN(birthday)) {
-        statusMessage = "Kein gültiger Geburtstag!";
-        valid = false;
-    }
+    if (firstname === "") throw "Firstname is required!";
+    if (lastname === "") throw "Lastname is required!";
+    if (isNaN(birthday)) throw "Invalid birthday!";
 
     const idat = {
         firstname: firstname,
@@ -138,7 +148,7 @@ PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
         birthday: birthday
     };
 
-    return { idat, valid, statusMessage };
+    return idat;
 }
 
 /**
@@ -146,10 +156,12 @@ PseudonymizationService.createIDAT = function (firstname, lastname, birthday) {
  * @param {Map<patientId, Patient>} patients - Map with the patients.
  * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be stored.
  * @param {PatientStatus} [status] - Indicates the status of the given patients.
+ * @throws Throws an exception if the pseudonymization server is not available.
+ * @throws Throws an exception if the database is not available.
  */
 PseudonymizationService.storePatients = async function (patients, patientIds, status) {
-    const handledIds = await handlePseudonymization(patients, patientIds, status);
-    await store(patients, handledIds);
+    const pseudonymizedIds = await handlePseudonymization(patients, patientIds, status);
+    await store(patients, pseudonymizedIds);
 }
 
 /**
@@ -157,6 +169,8 @@ PseudonymizationService.storePatients = async function (patients, patientIds, st
  * @param {Map<patientId, Patient>} patients - Map with the patients.
  * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be searched.
  * @param {PatientStatus} [status] - Indicates the status of the given patients.
+ * @throws Throws an exception if the pseudonymization server is not available.
+ * @throws Throws an exception if the database is not available.
  */
 PseudonymizationService.searchPatients = async function (patients, patientIds, status) {
     const pseudonymizedIds = await handlePseudonymization(patients, patientIds, status);
@@ -175,6 +189,7 @@ PseudonymizationService.searchPatients = async function (patients, patientIds, s
  * @param {patientId[]} [patientIds] - Array of patientIds of the patients to get pseudonymized.
  * @param {PatientStatus} [status] - Indicates the status of the given patients.
  * @returns {Promise<patientId[]>} - Array with the patientIds of successful pseudonymized patients.
+ * @throws Throws an exception if the pseudonymization server is not available.
  */
 async function handlePseudonymization(patients, patientIds, status) {
 
@@ -194,7 +209,9 @@ async function handlePseudonymization(patients, patientIds, status) {
                     created.push(key);
                     break;
 
-                case PatientStatus.CONFLICT:
+                case PatientStatus.IDAT_CONFLICT:
+                case PatientStatus.TOKEN_INVALID:
+                case PatientStatus.IDAT_INVALID:
                     conflicts.push(key);
                     break;
 
@@ -217,7 +234,9 @@ async function handlePseudonymization(patients, patientIds, status) {
                 pseudonymizedIds = (await PseudonymizationService.createPseudonyms(patients, patientIds)).pseudonymized;
                 break;
 
-            case PatientStatus.CONFLICT:
+            case PatientStatus.IDAT_CONFLICT:
+            case PatientStatus.TOKEN_INVALID:
+            case PatientStatus.IDAT_INVALID:
                 pseudonymizedIds = (await PseudonymizationService.resolveConflicts(patients, patientIds)).pseudonymized;
                 break;
 
@@ -243,6 +262,7 @@ async function handlePseudonymization(patients, patientIds, status) {
  *
  * @param {Map<patientId, Patient>} patients - Map with patients.
  * @param {patientId[]} patientIds - Array of patientIds of the patients to be stored.
+ * @throws Throws an exception if the database is not available.
  */
 async function store(patients, patientIds) {
 
@@ -271,7 +291,9 @@ async function store(patients, patientIds) {
         body: JSON.stringify(dataArray)
     };
 
-    const response = await fetch(requestURL, options).catch(error => console.error(error));
+    const response = await fetch(requestURL, options);
+
+    if (typeof response === 'undefined' || !response.ok) throw "Database not available";
 
     // TODO: is a response form the server necessary?
 }
@@ -283,6 +305,7 @@ async function store(patients, patientIds) {
  * Needs the variable 'contextPath' with the url of the pseudonymization server.
  * @param {Map<patientId, Patient>} patients - Map with patients.
  * @param {patientId[]} patientIds - Array of patientIds of the patients to get searched.
+ * @throws Throws an exception if the database is not available.
  */
 async function search(patients, patientIds) {
 
@@ -306,7 +329,9 @@ async function search(patients, patientIds) {
         body: JSON.stringify(dataArray)
     };
 
-    const response = await fetch(requestURL, options).catch(error => console.error(error));
+    const response = await fetch(requestURL, options);
+
+    if (typeof response === 'undefined' || !response.ok) throw "Database not available";
 
     const mdatArray = await response.json();
 
@@ -329,6 +354,7 @@ async function search(patients, patientIds) {
  * @param {Map<patientId, Patient>} patients - Map with patients.
  * @param {patientId[]} [patientIds] - Array of patientIds of the patients to get pseudonymized.
  * @returns {Promise<{pseudonymized: patientId[]; conflicts: patientId[];}>}
+ * @throws Throws an exception if the pseudonymization server is not available.
  */
 PseudonymizationService.createPseudonyms = async function (patients, patientIds) {
 
@@ -374,10 +400,10 @@ PseudonymizationService.resolveConflicts = async function (patients, patientIds)
     for (const key of patientIds) {
         const patient = patients.get(key);
 
-        if (patient.conflict.statusCode === ConflictStatus.TOKEN_INVALID) {
+        if (patient.statusCode === PatientStatus.TOKEN_INVALID) {
             invalidTokens.push(key);
         } else {
-            const success = await getPseudonym(patient.conflict.tokenURL, patient);
+            const success = await getPseudonym(patient.tokenURL, patient);
 
             if (success) {
                 pseudonymized.push(key);
@@ -402,16 +428,14 @@ PseudonymizationService.resolveConflicts = async function (patients, patientIds)
  * The URL gets invalid after some time specified int the Mainzelliste configuration.
  * @param {number} amount - Amount of requested pseudonymisation urls.
  * @returns {Promise<string[]>} - Array containing the urls.
+ * @throws Throws an exception if the pseudonymization server is not available.
  */
 async function getPseudonymizationURL(amount) {
-
-    //const contextPath = "/pseudonymizer/";
     const requestURL = contextPath + "api/tokens/addPatient/" + amount;
 
-    const response = await fetch(requestURL).catch(error => console.error(error));
+    const response = await fetch(requestURL);
 
-    if (typeof response === 'undefined' || !response.ok)
-        return;
+    if (typeof response === 'undefined' || !response.ok) throw await response.text();
 
     return await response.json();
 }
@@ -462,41 +486,34 @@ async function getPseudonym(requestURL, patient) {
 
     const response = await fetch(requestURL, options);
 
-    patient.status = PatientStatus.CONFLICT;
-    patient.conflict = {};
-
-    if (typeof response === 'undefined') {
-        patient.conflict.statusCode = ConflictStatus.UNKNOWN;
-        patient.conflict.statusMessage = "Unexpected error!";
-        patient.conflict.tokenURL = requestURL;
-    }
+    if (typeof response === "undefined") throw "Can't connect to Mainzelliste!";
 
     switch (response.status) {
         case 400:
+            // IDAT is invalid
             // This case should never be true.
             // Invalid IDAT should be detected by createIDAT.
-            patient.conflict.statusCode = ConflictStatus.IDAT_INVALID;
-            patient.conflict.statusMessage = await response.text();
-            patient.conflict.tokenURL = requestURL;
+            patient.status = PatientStatus.IDAT_INVALID;
+            patient.tokenURL = requestURL;
             break;
 
         case 401:
-            patient.conflict.statusCode = ConflictStatus.TOKEN_INVALID;
-            patient.conflict.statusMessage = "Invalid token";
-            patient.conflict.tokenURL = null;
+            // The token is invalid
+            patient.status = PatientStatus.TOKEN_INVALID;
+            patient.tokenURL = null;
             break;
 
         case 409:
-            patient.conflict.statusCode = ConflictStatus.IDAT_CONFLICT;
-            patient.conflict.statusMessage = "Conflict detected";
-            patient.conflict.tokenURL = requestURL;
+            // Conflicting IDAT
+            patient.status = PatientStatus.IDAT_CONFLICT;
+            patient.tokenURL = requestURL;
             break;
 
         default:
             const responseBody = await response.json();
             patient.pseudonym = responseBody.newId;
             patient.status = PatientStatus.PSEUDONYMIZED;
-            patient.conflict = null;
+            patient.tokenURL = null;
     }
 
     return (patient.status === PatientStatus.PSEUDONYMIZED);
