@@ -6,7 +6,7 @@ mainzelliste:
 server:
   port: 8080
   servlet:
-    context-path: /pseudonymizer
+    context-path: /demonstrator
 
 spring:
   datasource:

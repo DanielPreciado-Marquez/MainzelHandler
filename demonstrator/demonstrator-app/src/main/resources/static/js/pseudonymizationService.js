@@ -281,7 +281,7 @@ async function store(patients, patientIds) {
         });
     }
 
-    const requestURL = contextPath + "api/patients/save";
+    const requestURL = contextPath + "api/patients/send";
 
     const options = {
         method: 'POST',
@@ -319,7 +319,7 @@ async function search(patients, patientIds) {
         dataArray.push(patients.get(patientIds[i]).pseudonym);
     }
 
-    const requestURL = contextPath + "api/patients/load";
+    const requestURL = contextPath + "api/patients/request";
 
     const options = {
         method: 'POST',

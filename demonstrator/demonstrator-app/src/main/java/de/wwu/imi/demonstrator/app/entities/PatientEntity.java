@@ -1,13 +1,15 @@
-package de.wwu.imi.pseudonymizer.lib.entities;
+package de.wwu.imi.demonstrator.app.entities;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+import de.wwu.imi.pseudonymizer.lib.model.Patient;
+
 @Entity
 @Table(name = "patient")
-public class Patient {
+public class PatientEntity {
 
 	@Id
 	@Column(name = "pseudonym")
@@ -16,12 +18,17 @@ public class Patient {
 	@Column(name = "mdat")
 	private String mdat;
 
-	public Patient() {
+	public PatientEntity() {
 	}
 
-	public Patient(final String pseudonym, final String mdat) {
+	public PatientEntity(final String pseudonym, final String mdat) {
 		this.pseudonym = pseudonym;
 		this.mdat = mdat;
+	}
+
+	public PatientEntity(final Patient patient) {
+		this.pseudonym = patient.getPseudonym();
+		this.mdat = patient.getMdatString();
 	}
 
 	public String getPseudonym() {

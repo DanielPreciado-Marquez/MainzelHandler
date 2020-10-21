@@ -3,8 +3,8 @@ package de.wwu.imi.pseudonymizer.lib.controller;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
@@ -15,21 +15,17 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONObject;
 import org.slf4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
 
-import de.wwu.imi.pseudonymizer.lib.entities.Patient;
 import de.wwu.imi.pseudonymizer.lib.exceptions.PseudonymizationServerException;
-import de.wwu.imi.pseudonymizer.lib.repositories.PatientRepository;
+import de.wwu.imi.pseudonymizer.lib.model.Patient;
 
 /**
  * Controller that can talk to the Mainzelliste service. Its main purpose is to
@@ -44,33 +40,33 @@ import de.wwu.imi.pseudonymizer.lib.repositories.PatientRepository;
  *      "https://bitbucket.org/medicalinformatics/mainzelliste/src/master/">Mainzelliste
  *      Source Code</a>
  */
-@RestController
-@CrossOrigin
-public class PseudonymizationController {
+public abstract class AbstractPseudonymizationController {
 
-	private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PseudonymizationController.class);
+	private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AbstractPseudonymizationController.class);
 
-	// mainzelliste configurations are loaded from application.properties
+	/**
+	 * URL to the Mainzelliste.
+	 */
 	@Value("${mainzelliste.url}")
 	private String mainzellisteUrl;
 
+	/**
+	 * API-Key for the Mainzelliste.
+	 */
 	@Value("${mainzelliste.apikey}")
 	private String mainzellisteApiKey;
-
-	@Autowired
-	private PatientRepository patientRepository;
 
 	/**
 	 * Handles the tokening with the pseudonymization server and returns an Array of
 	 * urls with the appropriate token. Allowed token types are "addPatient",
 	 * "readPatient".
-	 * 
+	 *
 	 * @param type   Type of the token.
 	 * @param amount Amount of tokens.
 	 * @return An array of urls with the appropriate token.
 	 */
-	@GetMapping("/api/tokens/{type}/{amount}")
-	public String[] getPseudonymizationURL(@PathVariable("type") final String type,
+	@GetMapping("/tokens/{type}/{amount}")
+	public final String[] getPseudonymizationURL(@PathVariable("type") final String type,
 			@PathVariable("amount") final String amount) {
 
 		final var amountParsed = Integer.parseInt(amount);
@@ -89,34 +85,38 @@ public class PseudonymizationController {
 		return urlTokens;
 	}
 
-	@PostMapping("/api/patients/save")
-	public void addPatient(@RequestBody final List<Patient> patients) {
-		for (final var patient : patients) {
-			// TODO proper error handling
-			LOGGER.debug("Recieved Patient: " + patient.toString());
-			patientRepository.save(patient);
-		}
+	/**
+	 * Accepts a list of patients to be handled by the application.
+	 * @param patients List of patients.
+	 */
+	@PostMapping("/patients/send")
+	public final void acceptPatientsRequest(@RequestBody final List<Patient> patients) {
+		acceptPatients(patients);
 	}
 
-	@PostMapping("/api/patients/load")
-	public List<String> getMdat(@RequestBody final List<String> pseudonyms) {
-		List<String> mdat = new ArrayList<>();
-
-		// TODO It may be more efficient to use findAllById
-		// This would require some assigning of the returned mdat
-		for (final String pseudonym : pseudonyms) {
-			LOGGER.debug("Searching: " + pseudonym);
-			final var patient = patientRepository.findById(pseudonym);
-
-			if (patient.isPresent()) {
-				mdat.add(patient.get().getMdat());
-			} else {
-				// TODO proper handling
-				mdat.add("");
-			}
-		}
+	/**
+	 * Request the mdat of the given patients.
+	 * The returned mdat is in the same order as the given pseudonyms.
+	 * If the mdat is not available, an empty String will be returned.
+	 * @param pseudonyms List of pseudonyms of the requsted patients.
+	 * @return List of mdat.
+	 */
+	@PostMapping("/patients/request")
+	public final List<String> requestPatientsRequest(@RequestBody final List<String> pseudonyms) {
+		final var patients = requestPatients(pseudonyms);
+		final var mdat = patients.stream().map(patient -> patient.getMdatString()).collect(Collectors.toList());
 		return mdat;
 	}
+
+	@ExceptionHandler(PseudonymizationServerException.class)
+	public ResponseEntity<Object> handlePseudonymizationServerException(
+			final PseudonymizationServerException exception) {
+		return new ResponseEntity<>(exception.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
+	}
+
+	public abstract void acceptPatients(final List<Patient> patients);
+
+	public abstract List<Patient> requestPatients(final List<String> pseudonyms);
 
 	/**
 	 * Gets a session url with a valid session token from the pseudonymization
@@ -126,7 +126,7 @@ public class PseudonymizationController {
 	 * @return The session url with a valid session token from the pseudonymization
 	 *         server.
 	 */
-	private String getSessionURL(final HttpClient httpClient) {
+	private final String getSessionURL(final HttpClient httpClient) {
 		final String connectionUrl = mainzellisteUrl + "sessions/";
 
 		final HttpPost request = new HttpPost(connectionUrl);
@@ -157,7 +157,7 @@ public class PseudonymizationController {
 	 * @param httpClient A HTTP-Client for the connection.
 	 * @return The query token from the pseudonymization server.
 	 */
-	private String getTokenId(final String sessionUrl, final String tokenType, final HttpClient httpClient) {
+	private final String getTokenId(final String sessionUrl, final String tokenType, final HttpClient httpClient) {
 		final String connectionUrl = sessionUrl + "tokens/";
 
 		final HttpPost request = new HttpPost(connectionUrl);
@@ -187,9 +187,4 @@ public class PseudonymizationController {
 		return jsonResponse.getString("tokenId");
 	}
 
-	@ExceptionHandler(PseudonymizationServerException.class)
-	public ResponseEntity<Object> handlePseudonymizationServerException(
-			final PseudonymizationServerException exception) {
-		return new ResponseEntity<>(exception.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
-	}
 }
