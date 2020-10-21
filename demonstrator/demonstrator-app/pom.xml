@@ -5,12 +5,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>de.wwu.imi</groupId>
-	<artifactId>pseudonymizer-app</artifactId>
+	<artifactId>demonstrator-app</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>pseudonymisation-server-app</name>
-	<description>Spring app for pseudonymisation using the Mainzelliste</description>
+	<name>demonstrator-app</name>
+	<description>Spring app for demonstrating the pseudonymisation lib</description>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

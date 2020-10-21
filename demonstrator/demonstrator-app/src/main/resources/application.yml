@@ -10,8 +10,8 @@ server:
 
 spring:
   datasource:
-    username: pseudonymizer-user
-    password: pseudonymizer-password
+    username: demonstrator-user
+    password: demonstrator-password
     continueOnError: true
     initialize: false
     initialSize: 0
@@ -25,7 +25,7 @@ spring:
       ddl-auto: none
       naming_strategy: org.hibernate.cfg.DefaultNamingStrategy
     properties:
-      hibernate:   
+      hibernate:
         dialect: org.hibernate.dialect.MySQL5Dialect
         hbm2ddl:
           auto: none

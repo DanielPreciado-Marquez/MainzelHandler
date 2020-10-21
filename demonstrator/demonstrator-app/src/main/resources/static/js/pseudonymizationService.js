@@ -443,7 +443,7 @@ async function getPseudonymizationURL(amount) {
 /**
  * Sets the pseudonym for the given patient.
  * The URL can be crated with the getPseudonymizationURL function.
- * 
+ *
  * If the pseudonymisation was not successful, the pseudonym property will stay unchanged and a Conflict will be created.
  * @param {string} requestURL - URL for the pseudonymisation.
  * @param {Patient} patient - Patient to get pseudonymized.

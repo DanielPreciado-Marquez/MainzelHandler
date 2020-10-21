@@ -178,7 +178,7 @@ function addPseudonymizeButton(key, listElement) {
         } catch (error) {
             document.getElementById("server-error").innerHTML = error;
         }
-    
+
         updateList();
     });
 
