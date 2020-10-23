@@ -5,8 +5,11 @@
  */
 var patients = new Map();
 var nextKey = 0;
+var pseudonymizationService;
 
 window.onload = function () {
+    pseudonymizationService = new PseudonymizationService(contextPath);
+
     updateList();
 
     document.getElementById("add-patient").addEventListener("click", createPatient);
@@ -21,9 +24,9 @@ function createPatient() {
     try {
         if (key !== "" && patients.has(key)) {
             const patient = patients.get(key);
-            PseudonymizationService.updateIDAT(patient, patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
+            pseudonymizationService.updateIDAT(patient, patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
         } else {
-            const patient = PseudonymizationService.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value, { height: 180 });
+            const patient = pseudonymizationService.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value, { height: 180 });
             patients.set(nextKey++, patient);
         }
 
@@ -42,7 +45,7 @@ function createPatient() {
 
 async function updatePseudonyms() {
     try {
-        await PseudonymizationService.storePatients(patients);
+        await pseudonymizationService.storePatients(patients);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error;
     }
@@ -155,7 +158,7 @@ function addRetryButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await PseudonymizationService.storePatients(patients, [key], patients.get(key).status);
+            await pseudonymizationService.storePatients(patients, [key], patients.get(key).status);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error;
         }
@@ -174,7 +177,7 @@ function addPseudonymizeButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await PseudonymizationService.storePatients(patients, [key]);
+            await pseudonymizationService.storePatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error;
         }
