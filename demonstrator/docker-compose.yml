@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+    demonstrator-db:
+        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-db:0.0.1-snapshot
+        build:
+            context: ./demonstrator-db/
+        container_name: demonstrator-db
+        restart: always
+        ports:
+            - "3306:3306"
+        volumes:
+            - ./volumes/demonstrator-db/data:/var/lib/mysql

@@ -37,5 +37,7 @@ build/
 .recommenders/
 
 ### Local Testing/ Debugging ###
-pseudonymizer-app/logs/
-test-env/
+demonstrator/demonstrator-app/logs/
+demonstrator/test-env/
+application-dev.yml
+application-test.yml

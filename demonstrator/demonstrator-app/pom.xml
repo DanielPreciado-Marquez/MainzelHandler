@@ -5,11 +5,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>de.wwu.imi</groupId>
-	<artifactId>pseudonymizer-lib</artifactId>
+	<artifactId>demonstrator-app</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
 
-	<name>pseudonymisation-server-lib</name>
-	<description>Spring based library for pseudonymisation using the Mainzelliste</description>
+	<name>demonstrator-app</name>
+	<description>Spring app for demonstrating the pseudonymisation lib</description>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -28,19 +29,26 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+
 		<dependency>
-			<groupId>org.apache.httpcomponents</groupId>
-			<artifactId>httpclient</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.json</groupId>
-			<artifactId>json</artifactId>
-			<version>20180813</version>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<scope>runtime</scope>
 		</dependency>
+
 		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.6</version>
+			<groupId>de.wwu.imi</groupId>
+			<artifactId>pseudonymizer-lib</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
@@ -54,10 +62,14 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<dependency>
-			<groupId>org.mockito</groupId>
-			<artifactId>mockito-junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
 </project>
