@@ -58,19 +58,17 @@ public abstract class AbstractPseudonymizationController {
 
 	/**
 	 * Handles the tokening with the pseudonymization server and returns an Array of
-	 * urls with the appropriate token. Allowed token types are "addPatient",
-	 * "readPatient".
+	 * urls containing the token.
 	 *
 	 * @param type   Type of the token.
 	 * @param amount Amount of tokens.
 	 * @return An array of urls with the appropriate token.
 	 */
-	@GetMapping("/tokens/{type}/{amount}")
-	public final String[] getPseudonymizationURL(@PathVariable("type") final String type,
-			@PathVariable("amount") final String amount) {
+	@GetMapping("/tokens/addPatient/{amount}")
+	public final String[] getPseudonymizationURL(@PathVariable("amount") final String amount) {
 
 		final var amountParsed = Integer.parseInt(amount);
-		LOGGER.info("Requesting " + amount + " \"" + type + "\" tokens");
+		LOGGER.info("Requesting " + amount + " 'addPatient' tokens");
 
 		HttpClient httpClient = HttpClientBuilder.create().build();
 		String sessionURL = getSessionURL(httpClient);
@@ -78,15 +76,16 @@ public abstract class AbstractPseudonymizationController {
 
 		var urlTokens = new String[amountParsed];
 		for (int i = 0; i < amountParsed; i++) {
-			urlTokens[i] = mainzellisteUrl + "patients?tokenId=" + getTokenId(sessionURL, type, httpClient);
+			urlTokens[i] = mainzellisteUrl + "patients?tokenId=" + getAddPatientToken(sessionURL, httpClient);
+			//LOGGER.debug(i + ". token url: " + urlTokens[i]);
 		}
 
-		LOGGER.debug("Request resolved");
 		return urlTokens;
 	}
 
 	/**
 	 * Accepts a list of patients to be handled by the application.
+	 *
 	 * @param patients List of patients.
 	 */
 	@PostMapping("/patients/send")
@@ -95,9 +94,10 @@ public abstract class AbstractPseudonymizationController {
 	}
 
 	/**
-	 * Request the mdat of the given patients.
-	 * The returned mdat is in the same order as the given pseudonyms.
-	 * If the mdat is not available, an empty String will be returned.
+	 * Request the mdat of the given patients. The returned mdat is in the same
+	 * order as the given pseudonyms. If the mdat is not available, an empty String
+	 * will be returned.
+	 *
 	 * @param pseudonyms List of pseudonyms of the requsted patients.
 	 * @return List of mdat.
 	 */
@@ -157,7 +157,7 @@ public abstract class AbstractPseudonymizationController {
 	 * @param httpClient A HTTP-Client for the connection.
 	 * @return The query token from the pseudonymization server.
 	 */
-	private final String getTokenId(final String sessionUrl, final String tokenType, final HttpClient httpClient) {
+	private final String getAddPatientToken(final String sessionUrl, final HttpClient httpClient) {
 		final String connectionUrl = sessionUrl + "tokens/";
 
 		final HttpPost request = new HttpPost(connectionUrl);
@@ -167,7 +167,7 @@ public abstract class AbstractPseudonymizationController {
 		final JSONObject type = new JSONObject();
 		final JSONObject callback = new JSONObject();
 		type.put("data", callback);
-		type.put("type", tokenType);
+		type.put("type", "addPatient");
 
 		request.setEntity(new StringEntity(type.toString(), ContentType.APPLICATION_JSON));
 
