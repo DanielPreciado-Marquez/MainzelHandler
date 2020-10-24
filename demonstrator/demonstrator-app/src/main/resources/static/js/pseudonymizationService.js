@@ -134,17 +134,17 @@ function PseudonymizationService(serverURL) {
      */
     this.createIDAT = function (firstname, lastname, birthday) {
 
-        firstname = firstname.trim();
-        lastname = lastname.trim();
+        if (typeof firstname !== "string" || firstname.trim() === "") throw "Invalid firstname!";
+        if (typeof lastname !== "string" || lastname.trim() === "") throw "Invalid lastname!";
+        if (typeof birthday !== "string" && typeof birthday !== "number" && !(birthday instanceof Date)) throw "Invalid birthday!";
+
         birthday = new Date(birthday);
 
-        if (firstname === "") throw "Firstname is required!";
-        if (lastname === "") throw "Lastname is required!";
         if (isNaN(birthday)) throw "Invalid birthday!";
 
         const idat = {
-            firstname: firstname,
-            lastname: lastname,
+            firstname: firstname.trim(),
+            lastname: lastname.trim(),
             birthday: birthday
         };
 
