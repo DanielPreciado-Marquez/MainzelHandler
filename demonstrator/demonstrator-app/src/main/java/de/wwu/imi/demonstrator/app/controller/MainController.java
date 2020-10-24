@@ -26,4 +26,9 @@ public class MainController {
 	public String depseudonymizaton(Model model) {
 		return "depseudonymization";
 	}
+
+	@GetMapping("/test")
+	public String test(Model model) {
+		return "test";
+	}
 }
