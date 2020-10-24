@@ -42,6 +42,14 @@ QUnit.module('createIDAT', () => {
 
         assert.throws(
             () => {
+                pseudonymizationService.createIDAT();
+            },
+            /Invalid firstname!/,
+            'Firstname undefined'
+        );
+
+        assert.throws(
+            () => {
                 pseudonymizationService.createIDAT(null, null, null);
             },
             /Invalid firstname!/,
@@ -66,6 +74,14 @@ QUnit.module('createIDAT', () => {
     });
 
     QUnit.test('Invalid lastname!', assert => {
+
+        assert.throws(
+            () => {
+                pseudonymizationService.createIDAT("a");
+            },
+            /Invalid lastname!/,
+            'Lastname undefined'
+        );
 
         assert.throws(
             () => {
@@ -96,6 +112,14 @@ QUnit.module('createIDAT', () => {
 
         assert.throws(
             () => {
+                pseudonymizationService.createIDAT("a", "b");
+            },
+            /Invalid birthday!/,
+            'birthday undefined'
+        );
+
+        assert.throws(
+            () => {
                 pseudonymizationService.createIDAT("a", "b", null);
             },
             /Invalid birthday!/,
@@ -116,6 +140,47 @@ QUnit.module('createIDAT', () => {
             },
             /Invalid birthday!/,
             'birthday wrong type'
+        );
+    });
+});
+
+
+QUnit.module('createPatient', () => {
+
+    QUnit.test('Create regular with MDAT undefined', assert => {
+        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        assert.deepEqual(patient.mdat, {}, 'Compare MDAT');
+    });
+
+    QUnit.test('Create regular with MDAT null', assert => {
+        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020", null);
+        assert.deepEqual(patient.mdat, {}, 'Compare MDAT');
+    });
+
+    QUnit.test('Create regular with MDAT', assert => {
+        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020", {height: 180});
+        assert.deepEqual(patient.mdat, {height: 180}, 'Compare MDAT');
+    });
+
+    QUnit.test('Invalid MDAT', assert => {
+
+        assert.throws(
+            () => {
+                pseudonymizationService.createPatient("a", "s", "08-10-2020", "");
+            },
+            /Invalid MDAT!/,
+            'MDAT wrong type (string)'
+        );
+    });
+
+    QUnit.test('Invalid MDAT', assert => {
+
+        assert.throws(
+            () => {
+                pseudonymizationService.createPatient("a", "s", "08-10-2020", [1, 2, 3]);
+            },
+            /Invalid MDAT!/,
+            'MDAT wrong type (Array)'
         );
     });
 });
