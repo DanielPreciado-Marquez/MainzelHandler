@@ -76,7 +76,8 @@ function PseudonymizationService(serverURL) {
 
         const idat = this.createIDAT(firstname, lastname, birthday);
 
-        if (!mdat) mdat = {};
+        mdat = mdat ?? {};
+        if (typeof mdat !== 'object' || Array.isArray(mdat)) throw "Invalid MDAT!";
 
         const patient = {
             status: PatientStatus.CREATED,
