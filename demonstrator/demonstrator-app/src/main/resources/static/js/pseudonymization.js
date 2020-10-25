@@ -45,7 +45,7 @@ function createPatient() {
 
 async function updatePseudonyms() {
     try {
-        await pseudonymizationService.storePatients(patients);
+        await pseudonymizationService.sendPatients(patients);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error;
     }
@@ -158,7 +158,7 @@ function addRetryButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymizationService.storePatients(patients, [key], patients.get(key).status);
+            await pseudonymizationService.sendPatients(patients, [key], patients.get(key).status);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error;
         }
@@ -177,7 +177,7 @@ function addPseudonymizeButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymizationService.storePatients(patients, [key]);
+            await pseudonymizationService.sendPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error;
         }

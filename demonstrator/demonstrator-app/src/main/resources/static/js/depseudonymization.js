@@ -47,7 +47,7 @@ async function updatePseudonyms() {
     document.getElementById("server-error").innerHTML = "";
 
     try {
-        await pseudonymizationService.searchPatients(patients);
+        await pseudonymizationService.requestPatients(patients);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error;
     }
@@ -160,7 +160,7 @@ function addRetryButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymizationService.searchPatients(patients, [key], patients.get(key).status);
+            await pseudonymizationService.requestPatients(patients, [key], patients.get(key).status);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error;
         }
@@ -179,7 +179,7 @@ function addSearchButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymizationService.searchPatients(patients, [key]);
+            await pseudonymizationService.requestPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error;
         }

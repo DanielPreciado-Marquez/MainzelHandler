@@ -85,7 +85,7 @@ function PseudonymizationService(serverURL) {
             pseudonym: null,
             idat: idat,
             mdat: mdat,
-            conflict: null
+            tokenURL: null
         };
 
         return patient;
@@ -160,9 +160,9 @@ function PseudonymizationService(serverURL) {
      * @throws Throws an exception if the pseudonymization server is not available.
      * @throws Throws an exception if the database is not available.
      */
-    this.storePatients = async function (patients, patientIds, status) {
+    this.sendPatients = async function (patients, patientIds, status) {
         const pseudonymizedIds = await handlePseudonymization(patients, patientIds, status);
-        await store(patients, pseudonymizedIds);
+        await send(patients, pseudonymizedIds);
     }
 
     /**
@@ -173,9 +173,9 @@ function PseudonymizationService(serverURL) {
      * @throws Throws an exception if the pseudonymization server is not available.
      * @throws Throws an exception if the database is not available.
      */
-    this.searchPatients = async function (patients, patientIds, status) {
+    this.requestPatients = async function (patients, patientIds, status) {
         const pseudonymizedIds = await handlePseudonymization(patients, patientIds, status);
-        await search(patients, pseudonymizedIds);
+        await request(patients, pseudonymizedIds);
     }
 
     /**
@@ -255,7 +255,7 @@ function PseudonymizationService(serverURL) {
     }
 
     /**
-     * Stores patients in the database.
+     * Sends patients to the server.
      * The patients must have a pseudonym.
      *
      * TODO: give response if the patient got stored successfully.
@@ -264,7 +264,7 @@ function PseudonymizationService(serverURL) {
      * @param {patientId[]} patientIds - Array of patientIds of the patients to be stored.
      * @throws Throws an exception if the database is not available.
      */
-    async function store(patients, patientIds) {
+    async function send(patients, patientIds) {
 
         if (patientIds.length === 0) {
             return;
@@ -300,13 +300,13 @@ function PseudonymizationService(serverURL) {
 
     /**
     /**
-     * Searches patients in the database and sets the mdat.
+     * Requests patients from the server and sets the mdat.
      * The patients must have a pseudonym.
      * @param {Map<patientId, Patient>} patients - Map with patients.
      * @param {patientId[]} patientIds - Array of patientIds of the patients to get searched.
      * @throws Throws an exception if the database is not available.
      */
-    async function search(patients, patientIds) {
+    async function request(patients, patientIds) {
 
         if (patientIds.length === 0) {
             return;
@@ -513,6 +513,7 @@ function PseudonymizationService(serverURL) {
                 patient.pseudonym = responseBody.newId;
                 patient.status = PatientStatus.PSEUDONYMIZED;
                 patient.tokenURL = null;
+
         }
 
         return (patient.status === PatientStatus.PSEUDONYMIZED);
