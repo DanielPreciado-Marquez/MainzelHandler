@@ -27,8 +27,13 @@ public class MainController {
 		return "depseudonymization";
 	}
 
-	@GetMapping("/test")
-	public String test(Model model) {
-		return "test";
+	@GetMapping("/utilTest")
+	public String utilTest(Model model) {
+		return "utilTest";
+	}
+
+	@GetMapping("/integrationTest")
+	public String integrationTest(Model model) {
+		return "integrationTest";
 	}
 }
