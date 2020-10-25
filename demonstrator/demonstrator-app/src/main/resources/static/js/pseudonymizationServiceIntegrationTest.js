@@ -87,9 +87,7 @@ QUnit.module('sendPatients', () => {
         assert.deepEqual(patient1.mdat, mdat, 'Compare MDAT');
 
         mdat = {testProperty: 1};
-        // TODO: Create a function like updateMDAT for this
-        patient0.mdat = mdat;
-        patient0.status = PatientStatus.PSEUDONYMIZED;
+        pseudonymizationService.updateMDAT(patient0, mdat);
 
         await pseudonymizationService.sendPatients(patients, [0]);
 

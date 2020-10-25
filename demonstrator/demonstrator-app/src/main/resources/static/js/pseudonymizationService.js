@@ -61,7 +61,6 @@ const PatientStatus = Object.freeze({
 /**
  * This module is used to connect to the configured Pseudonymization service.
  * TODO: Maybe change patient into a class to prevent manuel changing the properties
- * TODO: Add updateMDAT method that sets the status to a proper value
  */
 function PseudonymizationService(serverURL) {
 
@@ -154,6 +153,18 @@ function PseudonymizationService(serverURL) {
         };
 
         return idat;
+    }
+
+    /**
+     * Sets the MDAT of the given patient.
+     * If the patient got send or requested, the status will be set to PSEUDONYMIZED.
+     * @param {Patient} patient - Patient to be updated.
+     * @param {Object} [mdat={}] - MDAT of the Patient. For now, every Object is valid. Default is an empty object.
+     */
+    this.updateMDAT = function (patient, mdat) {
+        mdat = mdat ?? {};
+        patient.mdat = mdat;
+        if (patient.status > 1) patient.status = PatientStatus.PSEUDONYMIZED;
     }
 
     /**
