@@ -51,14 +51,17 @@ const PatientStatus = Object.freeze({
     IDAT_INVALID: -1,
     CREATED: 0,
     PSEUDONYMIZED: 1,
+    // TODO rename e.g 'SEND', 'HANDLED'
     SAVED: 11,
-    // TODO: Conflict with stored data? e.g. NOT_SAVED
+    // TODO: Conflict with send data? e.g. 'NOT_SEND', 'NOT_HANDLED'
     FOUND: 21,
     NOT_FOUND: 22,
 });
 
 /**
  * This module is used to connect to the configured Pseudonymization service.
+ * TODO: Maybe change patient into a class to prevent manuel changing the properties
+ * TODO: Add updateMDAT method that sets the status to a proper value
  */
 function PseudonymizationService(serverURL) {
 
@@ -142,6 +145,7 @@ function PseudonymizationService(serverURL) {
         birthday = new Date(birthday);
 
         if (isNaN(birthday)) throw "Invalid birthday!";
+        if (birthday.getTime() > new Date().getTime()) throw "Invalid birthday!";
 
         const idat = {
             firstname: firstname.trim(),
@@ -167,6 +171,7 @@ function PseudonymizationService(serverURL) {
 
     /**
      * Searches the given patients.
+     * TODO: Allow to request patients with status FOUND and NOT_FOUND again
      * @param {Map<patientId, Patient>} patients - Map with the patients.
      * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be searched.
      * @param {PatientStatus} [status] - Indicates the status of the given patients.
@@ -179,7 +184,7 @@ function PseudonymizationService(serverURL) {
     }
 
     /**
-     * Handles the pseudonymisation of the given Patients.
+     * Handles the pseudonymization of the given Patients.
      * If patientIds is null, every patient in the map will be handled.
      * If the status is given, every patient to be handled must have this PatientStatus.
      * Patients with status CREATED will be pseudonymized with createPseudonyms.
@@ -257,11 +262,10 @@ function PseudonymizationService(serverURL) {
     /**
      * Sends patients to the server.
      * The patients must have a pseudonym.
-     *
-     * TODO: give response if the patient got stored successfully.
-     *
+     * TODO: give response if the patient got send successfully.
+     * TODO: Dynamic error message from the server
      * @param {Map<patientId, Patient>} patients - Map with patients.
-     * @param {patientId[]} patientIds - Array of patientIds of the patients to be stored.
+     * @param {patientId[]} patientIds - Array of patientIds of the patients to be send.
      * @throws Throws an exception if the database is not available.
      */
     async function send(patients, patientIds) {
@@ -296,12 +300,16 @@ function PseudonymizationService(serverURL) {
         if (typeof response === 'undefined' || !response.ok) throw "Database not available";
 
         // TODO: is a response form the server necessary?
+        for (const key of patientIds) {
+            const patient = patients.get(key);
+            patient.status = PatientStatus.SAVED;
+        }
     }
 
     /**
-    /**
      * Requests patients from the server and sets the mdat.
      * The patients must have a pseudonym.
+     * TODO: Dynamic error message from the server
      * @param {Map<patientId, Patient>} patients - Map with patients.
      * @param {patientId[]} patientIds - Array of patientIds of the patients to get searched.
      * @throws Throws an exception if the database is not available.
@@ -422,10 +430,10 @@ function PseudonymizationService(serverURL) {
     }
 
     /**
-     * Creates the given amount of pseudonymisation urls.
-     * One url contains one token and can be used for the pseudonymisation of one patient.
+     * Creates the given amount of pseudonymization urls.
+     * One url contains one token and can be used for the pseudonymization of one patient.
      * The URL gets invalid after some time specified int the Mainzelliste configuration.
-     * @param {number} amount - Amount of requested pseudonymisation urls.
+     * @param {number} amount - Amount of requested pseudonymization urls.
      * @returns {Promise<string[]>} - Array containing the urls.
      * @throws Throws an exception if the pseudonymization server is not available.
      */
@@ -443,10 +451,10 @@ function PseudonymizationService(serverURL) {
      * Sets the pseudonym for the given patient.
      * The URL can be crated with the getPseudonymizationURL function.
      *
-     * If the pseudonymisation was not successful, the pseudonym property will stay unchanged and a Conflict will be created.
-     * @param {string} requestURL - URL for the pseudonymisation.
+     * If the pseudonymization was not successful, the pseudonym property will stay unchanged and a Conflict will be created.
+     * @param {string} requestURL - URL for the pseudonymization.
      * @param {Patient} patient - Patient to get pseudonymized.
-     * @returns {Promise<boolean>} - Returns whether the pseudonymazaiton was successful or not.
+     * @returns {Promise<boolean>} - Returns whether the pseudonymization was successful or not.
      */
     async function getPseudonym(requestURL, patient) {
 
@@ -494,6 +502,7 @@ function PseudonymizationService(serverURL) {
                 // Invalid IDAT should be detected by createIDAT.
                 patient.status = PatientStatus.IDAT_INVALID;
                 patient.tokenURL = requestURL;
+                console.error(await response.text());
                 break;
 
             case 401:
