@@ -114,7 +114,7 @@ QUnit.module('createIDAT', () => {
     });
 
     QUnit.test('Invalid birthday!', assert => {
-        assert.expect(4);
+        assert.expect(5);
 
         assert.throws(
             () => {
@@ -146,6 +146,17 @@ QUnit.module('createIDAT', () => {
             },
             /Invalid birthday!/,
             'birthday wrong type'
+        );
+
+        assert.throws(
+            () => {
+                const date = new Date();
+                date.setDate(date.getDate() + 1);
+
+                pseudonymizationService.createIDAT("a", "b", date);
+            },
+            /Invalid birthday!/,
+            'birthday future date'
         );
     });
 });
