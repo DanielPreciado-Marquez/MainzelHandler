@@ -77,8 +77,10 @@ public abstract class AbstractPseudonymizationController {
 		var urlTokens = new String[amountParsed];
 		for (int i = 0; i < amountParsed; i++) {
 			urlTokens[i] = mainzellisteUrl + "patients?tokenId=" + getAddPatientToken(sessionURL, httpClient);
-			//LOGGER.debug(i + ". token url: " + urlTokens[i]);
+			LOGGER.trace(i + ". token url: " + urlTokens[i]);
 		}
+
+		LOGGER.debug("Tokens created");
 
 		return urlTokens;
 	}
