@@ -20,7 +20,7 @@ spring:
     minIdle: 0
 
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: none
       naming_strategy: org.hibernate.cfg.DefaultNamingStrategy
