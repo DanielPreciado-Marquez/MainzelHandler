@@ -27,6 +27,7 @@ public class MainController {
 		return "depseudonymization";
 	}
 
+	// Test sites
 	@GetMapping("/utilTest")
 	public String utilTest(Model model) {
 		return "utilTest";
@@ -35,5 +36,10 @@ public class MainController {
 	@GetMapping("/integrationTest")
 	public String integrationTest(Model model) {
 		return "integrationTest";
+	}
+
+	@GetMapping("/batchTest")
+	public String batchTest(Model model) {
+		return "batchTest";
 	}
 }
