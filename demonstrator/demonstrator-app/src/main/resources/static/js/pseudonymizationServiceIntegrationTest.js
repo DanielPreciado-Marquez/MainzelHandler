@@ -90,11 +90,7 @@ QUnit.module('sendPatients', () => {
         pseudonymizationService.updateMDAT(patient0, mdat);
 
         await pseudonymizationService.sendPatients(patients, [0]);
-
-        // TODO: Search patient1 second time instead of changing the status
-        patient1.status = PatientStatus.PSEUDONYMIZED;
-
-        await pseudonymizationService.requestPatients(patients, [1]);
+        await pseudonymizationService.requestPatients(patients, [1], true);
 
         assert.strictEqual(patient1.status, PatientStatus.FOUND, 'Compare status');
         assert.deepEqual(patient1.mdat, mdat, 'Compare MDAT');

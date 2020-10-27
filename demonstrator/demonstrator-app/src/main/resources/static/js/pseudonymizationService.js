@@ -164,19 +164,46 @@ function PseudonymizationService(serverURL) {
     this.updateMDAT = function (patient, mdat) {
         mdat = mdat ?? {};
         patient.mdat = mdat;
-        if (patient.status > 1) patient.status = PatientStatus.PSEUDONYMIZED;
+
+        if (patient.status > 1)
+            patient.status = PatientStatus.PSEUDONYMIZED;
+    }
+
+    /**
+     * Searches patients with the given status.
+     * @param {Map<patientId, Patient>} patients - Map with the patients.
+     * @param {PatientStatus | PatientStatus[]} patientStatus - Status of the patients to be selected.
+     * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be considered.
+     * @returns {patientId[]} - Ids of th found patients.
+     */
+    this.getPatients = function (patients, patientStatus, patientIds) {
+        if (!Array.isArray(patientStatus))
+            patientStatus = [patientStatus];
+
+        patientIds = patientIds ?? Array.from(patients.keys());
+
+        const result = [];
+
+        for (const key of patientIds)
+            if (patientStatus.includes(patients.get(key).status))
+                result.push(key);
+
+        return result;
     }
 
     /**
      * Stores the given patients.
      * @param {Map<patientId, Patient>} patients - Map with the patients.
-     * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be stored.
-     * @param {PatientStatus} [status] - Indicates the status of the given patients.
+     * @param {patientId[]} [patientIds=Array.from(patients.keys())] - Array of patientIds of the patients to be stored.
+     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, SAVED should be send again.
      * @throws Throws an exception if the pseudonymization server is not available.
      * @throws Throws an exception if the database is not available.
      */
-    this.sendPatients = async function (patients, patientIds, status) {
-        const pseudonymizedIds = await handlePseudonymization(patients, patientIds, status);
+    this.sendPatients = async function (patients, patientIds, retrySucceeded) {
+        patientIds = patientIds ?? Array.from(patients.keys());
+        retrySucceeded = retrySucceeded ?? false;
+
+        const pseudonymizedIds = await handlePseudonymization(patients, patientIds, retrySucceeded);
         await send(patients, pseudonymizedIds);
     }
 
@@ -185,89 +212,70 @@ function PseudonymizationService(serverURL) {
      * TODO: Allow to request patients with status FOUND and NOT_FOUND again
      * @param {Map<patientId, Patient>} patients - Map with the patients.
      * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be searched.
-     * @param {PatientStatus} [status] - Indicates the status of the given patients.
+     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, SAVED should be requested again.
      * @throws Throws an exception if the pseudonymization server is not available.
      * @throws Throws an exception if the database is not available.
      */
-    this.requestPatients = async function (patients, patientIds, status) {
-        const pseudonymizedIds = await handlePseudonymization(patients, patientIds, status);
+    this.requestPatients = async function (patients, patientIds, retrySucceeded) {
+        patientIds = patientIds ?? Array.from(patients.keys());
+        retrySucceeded = retrySucceeded ?? false;
+
+        const pseudonymizedIds = await handlePseudonymization(patients, patientIds, retrySucceeded);
         await request(patients, pseudonymizedIds);
     }
 
     /**
      * Handles the pseudonymization of the given Patients.
      * If patientIds is null, every patient in the map will be handled.
-     * If the status is given, every patient to be handled must have this PatientStatus.
      * Patients with status CREATED will be pseudonymized with createPseudonyms.
      * Patients with status CONFLICT will be pseudonymized with resolveConflicts.
      * Patients with status PSEUDONYMIZED be passed through.
      * Every other status will be ignored.
      * @param {Map<patientId, Patient>} patients - Map with the patients.
-     * @param {patientId[]} [patientIds] - Array of patientIds of the patients to get pseudonymized.
-     * @param {PatientStatus} [status] - Indicates the status of the given patients.
+     * @param {patientId[]} patientIds - Array of patientIds of the patients to get pseudonymized.
+     * @param {boolean} includeSucceeded - Indicates if patients with status FOUND, NOT_FOUND, SAVED should included.
      * @returns {Promise<patientId[]>} - Array with the patientIds of successful pseudonymized patients.
      * @throws Throws an exception if the pseudonymization server is not available.
      */
-    async function handlePseudonymization(patients, patientIds, status) {
+    async function handlePseudonymization(patients, patientIds, includeSucceeded) {
+        const created = [];
+        const conflicts = [];
+        let pseudonymized = [];
 
-        if (!patientIds) patientIds = Array.from(patients.keys());
+        for (const key of patientIds) {
+            const patient = patients.get(key);
 
-        let pseudonymizedIds;
-
-        if (!status) {
-            const created = [];
-            const conflicts = [];
-            let pseudonymized = [];
-
-            for (const key of patientIds) {
-                const patient = patients.get(key);
-                switch (patient.status) {
-                    case PatientStatus.CREATED:
-                        created.push(key);
-                        break;
-
-                    case PatientStatus.IDAT_CONFLICT:
-                    case PatientStatus.TOKEN_INVALID:
-                    case PatientStatus.IDAT_INVALID:
-                        conflicts.push(key);
-                        break;
-
-                    case PatientStatus.PSEUDONYMIZED:
-                        pseudonymized.push(key);
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-
-            pseudonymized = pseudonymized.concat((await createPseudonyms(patients, created)).pseudonymized);
-            pseudonymized = pseudonymized.concat((await resolveConflicts(patients, conflicts)).pseudonymized);
-
-            pseudonymizedIds = pseudonymized;
-        } else {
-            switch (status) {
+            switch (patient.status) {
                 case PatientStatus.CREATED:
-                    pseudonymizedIds = (await createPseudonyms(patients, patientIds)).pseudonymized;
+                    created.push(key);
                     break;
 
                 case PatientStatus.IDAT_CONFLICT:
                 case PatientStatus.TOKEN_INVALID:
                 case PatientStatus.IDAT_INVALID:
-                    pseudonymizedIds = (await resolveConflicts(patients, patientIds)).pseudonymized;
+                    conflicts.push(key);
                     break;
 
                 case PatientStatus.PSEUDONYMIZED:
-                    pseudonymizedIds = patientIds;
+                    pseudonymized.push(key);
+                    break;
+
+                case PatientStatus.FOUND:
+                case PatientStatus.NOT_FOUND:
+                case PatientStatus.SAVED:
+                    if (includeSucceeded)
+                        pseudonymized.push(key);
                     break;
 
                 default:
-                    pseudonymizedIds = [];
                     break;
             }
         }
 
-        return pseudonymizedIds;
+        pseudonymized = pseudonymized.concat((await createPseudonyms(patients, created)).pseudonymized);
+        pseudonymized = pseudonymized.concat((await resolveConflicts(patients, conflicts)).pseudonymized);
+
+        return pseudonymized;
     }
 
     /**
@@ -280,10 +288,7 @@ function PseudonymizationService(serverURL) {
      * @throws Throws an exception if the database is not available.
      */
     async function send(patients, patientIds) {
-
-        if (patientIds.length === 0) {
-            return;
-        }
+        if (patientIds.length === 0) return;
 
         const dataArray = [];
 
@@ -507,6 +512,13 @@ function PseudonymizationService(serverURL) {
         if (typeof response === "undefined") throw "Can't connect to Mainzelliste!";
 
         switch (response.status) {
+            case 201:
+                const responseBody = await response.json();
+                patient.pseudonym = responseBody.newId;
+                patient.status = PatientStatus.PSEUDONYMIZED;
+                patient.tokenURL = null;
+                break;
+
             case 400:
                 // IDAT is invalid
                 // This case should never be true.
@@ -529,11 +541,7 @@ function PseudonymizationService(serverURL) {
                 break;
 
             default:
-                const responseBody = await response.json();
-                patient.pseudonym = responseBody.newId;
-                patient.status = PatientStatus.PSEUDONYMIZED;
-                patient.tokenURL = null;
-
+                throw await response.text();
         }
 
         return (patient.status === PatientStatus.PSEUDONYMIZED);

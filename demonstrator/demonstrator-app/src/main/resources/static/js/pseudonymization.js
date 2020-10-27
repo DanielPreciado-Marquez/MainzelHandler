@@ -86,6 +86,10 @@ function updateList() {
                 addSureButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
+            case PatientStatus.SAVED:
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gesendet, patient: " + JSON.stringify(patient.idat)));
+                addDeleteButton(key, listElement);
+                break;
         }
 
         patientList.appendChild(listElement);
@@ -158,7 +162,7 @@ function addRetryButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymizationService.sendPatients(patients, [key], patients.get(key).status);
+            await pseudonymizationService.sendPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error;
         }

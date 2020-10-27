@@ -160,7 +160,7 @@ function addRetryButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymizationService.requestPatients(patients, [key], patients.get(key).status);
+            await pseudonymizationService.requestPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error;
         }
