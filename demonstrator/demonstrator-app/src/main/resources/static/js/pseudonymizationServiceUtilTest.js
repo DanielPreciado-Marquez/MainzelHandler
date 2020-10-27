@@ -339,3 +339,58 @@ QUnit.module('updateMDAT', () => {
     });
 
 });
+
+QUnit.module('getPatients', hooks => {
+
+    let patients;
+
+    hooks.before(() => {
+        patients = new Map();
+
+        const patient0 = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        patient0.status = PatientStatus.PSEUDONYMIZED;
+        patients.set(0, patient0);
+
+        const patient1 = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        patient1.status = PatientStatus.IDAT_CONFLICT;
+        patients.set(1, patient1);
+
+        const patient2 = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        patient2.status = PatientStatus.PSEUDONYMIZED;
+        patients.set(2, patient2);
+
+        const patient3 = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        patient3.status = PatientStatus.SAVED;
+        patients.set(3, patient3);
+    });
+
+    QUnit.test('Find one status', assert => {
+        assert.expect(3);
+
+        const result = pseudonymizationService.getPatients(patients, PatientStatus.PSEUDONYMIZED);
+
+        assert.strictEqual(result.length, 2, "Check amount of found patients");
+        assert.true(result.includes(0), "Found patient 0");
+        assert.true(result.includes(2), "Found patient 2");
+    });
+
+    QUnit.test('Find multiple status', assert => {
+        assert.expect(4);
+
+        const result = pseudonymizationService.getPatients(patients, [PatientStatus.PSEUDONYMIZED, PatientStatus.IDAT_CONFLICT]);
+
+        assert.strictEqual(result.length, 3, "Check amount of found patients");
+        assert.true(result.includes(0), "Found patient 0");
+        assert.true(result.includes(1), "Found patient 1");
+        assert.true(result.includes(2), "Found patient 2");
+    });
+
+    QUnit.test('Find multiple status from subset', assert => {
+        assert.expect(2);
+
+        const result = pseudonymizationService.getPatients(patients, [PatientStatus.PSEUDONYMIZED, PatientStatus.IDAT_CONFLICT], [0, 3]);
+
+        assert.strictEqual(result.length, 1, "Check amount of found patients");
+        assert.true(result.includes(0), "Found patient 0");
+    });
+});
