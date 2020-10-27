@@ -80,8 +80,7 @@ public abstract class AbstractPseudonymizationController {
 			LOGGER.trace(i + ". token url: " + urlTokens[i]);
 		}
 
-		LOGGER.debug("Tokens created");
-
+		LOGGER.debug("Tokens created: " + urlTokens.length);
 		return urlTokens;
 	}
 
