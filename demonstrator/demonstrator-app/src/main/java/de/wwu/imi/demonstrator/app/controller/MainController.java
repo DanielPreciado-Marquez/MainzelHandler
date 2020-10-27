@@ -17,13 +17,29 @@ public class MainController {
 		return "welcome"; // welcome.html in src/main/resources/templates/
 	}
 
-	@GetMapping("/pseudonymization")
-	public String pseudonymizaton(Model model) {
-		return "pseudonymization";
+	@GetMapping("/sendPatients")
+	public String sendPatients(Model model) {
+		return "sendPatients";
 	}
 
-	@GetMapping("/depseudonymization")
-	public String depseudonymizaton(Model model) {
-		return "depseudonymization";
+	@GetMapping("/requestPatients")
+	public String requestPatients(Model model) {
+		return "requestPatients";
+	}
+
+	// Test sites
+	@GetMapping("/utilTest")
+	public String utilTest(Model model) {
+		return "utilTest";
+	}
+
+	@GetMapping("/integrationTest")
+	public String integrationTest(Model model) {
+		return "integrationTest";
+	}
+
+	@GetMapping("/batchTest")
+	public String batchTest(Model model) {
+		return "batchTest";
 	}
 }
