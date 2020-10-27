@@ -87,7 +87,7 @@ function updateList() {
                 addDeleteButton(key, listElement);
                 break;
             case PatientStatus.SAVED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gesendet, patient: " + JSON.stringify(patient.idat)));
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gesendet, patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
                 addDeleteButton(key, listElement);
                 break;
         }
