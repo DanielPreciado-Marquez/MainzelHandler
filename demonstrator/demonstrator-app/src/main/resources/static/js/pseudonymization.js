@@ -39,7 +39,7 @@ function createPatient() {
 
         updateList();
     } catch (error) {
-        document.getElementById("idat-error").innerHTML = error;
+        document.getElementById("idat-error").innerHTML = error.message;
     }
 }
 
@@ -47,7 +47,7 @@ async function updatePseudonyms() {
     try {
         await pseudonymizationService.sendPatients(patients);
     } catch (error) {
-        document.getElementById("server-error").innerHTML = error;
+        document.getElementById("server-error").innerHTML = error.message;
     }
 
     updateList();
@@ -164,7 +164,7 @@ function addRetryButton(key, listElement) {
         try {
             await pseudonymizationService.sendPatients(patients, [key]);
         } catch (error) {
-            document.getElementById("server-error").innerHTML = error;
+            document.getElementById("server-error").innerHTML = error.message;
         }
 
         updateList();
@@ -183,7 +183,7 @@ function addPseudonymizeButton(key, listElement) {
         try {
             await pseudonymizationService.sendPatients(patients, [key]);
         } catch (error) {
-            document.getElementById("server-error").innerHTML = error;
+            document.getElementById("server-error").innerHTML = error.message;
         }
 
         updateList();
