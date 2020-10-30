@@ -119,8 +119,8 @@ public abstract class AbstractPseudonymizationController {
 	 * @param patients List of patients.
 	 */
 	@PostMapping("/patients/send")
-	public final void acceptPatientsRequest(@RequestBody final List<Patient> patients) {
-		acceptPatients(patients);
+	public final List<Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients) {
+		return acceptPatients(patients);
 	}
 
 	/**
@@ -147,13 +147,16 @@ public abstract class AbstractPseudonymizationController {
 	 * Abstract method to be implemented in the application.
 	 *
 	 * @param patients List of patients.
+	 * @return List containing boolean that indicates if the patients got processed
+	 *         successfully.
 	 */
-	public abstract void acceptPatients(final List<Patient> patients);
+	public abstract List<Boolean> acceptPatients(final List<Patient> patients);
 
 	/**
 	 * Abstract method to be implemented in the application.
 	 *
 	 * @param pseudonyms List of pseudonyms.
+	 * @return List containing the requested patients.
 	 */
 	public abstract List<Patient> requestPatients(final List<String> pseudonyms);
 

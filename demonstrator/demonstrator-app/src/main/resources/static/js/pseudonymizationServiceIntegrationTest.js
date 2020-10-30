@@ -24,8 +24,7 @@ QUnit.module('pseudonymization', () => {
 
         await pseudonymizationService.sendPatients(patients, [0]);
 
-        // TODO: Update PatientStatus after rework
-        assert.strictEqual(patient0.status, PatientStatus.SAVED, 'Compare status');
+        assert.strictEqual(patient0.status, PatientStatus.PROCESSED, 'Compare status');
         assert.strictEqual(patient0.pseudonym, "H0N587RL", 'Compare pseudonym');
 
         assert.strictEqual(patient1.status, PatientStatus.CREATED, 'Compare status');
@@ -47,8 +46,7 @@ QUnit.module('pseudonymization', () => {
 
         await pseudonymizationService.sendPatients(patients);
 
-        // TODO: Update PatientStatus after rework
-        assert.strictEqual(patient0.status, PatientStatus.SAVED, 'Compare status');
+        assert.strictEqual(patient0.status, PatientStatus.PROCESSED, 'Compare status');
         assert.strictEqual(patient0.pseudonym, "H0N587RL", 'Compare pseudonym');
         assert.strictEqual(patient0.tokenURL, null, 'Compare tokenURL');
 
@@ -61,8 +59,7 @@ QUnit.module('pseudonymization', () => {
 
         await pseudonymizationService.sendPatients(patients);
 
-        // TODO: Update PatientStatus after rework
-        assert.strictEqual(patient1.status, PatientStatus.SAVED, 'Compare status');
+        assert.strictEqual(patient1.status, PatientStatus.PROCESSED, 'Compare status');
         assert.strictEqual(patient1.pseudonym, "H0N587RL", 'Compare pseudonym');
         assert.strictEqual(patient1.tokenURL, null, 'Compare tokenURL');
     });

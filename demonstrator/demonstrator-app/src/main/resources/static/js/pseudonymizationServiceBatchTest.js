@@ -38,7 +38,7 @@ QUnit.module('batch-test', () => {
         await pseudonymizationService.sendPatients(patients);
 
         for (const [key, patient] of patients.entries()) {
-            assert.strictEqual(patient.status, PatientStatus.SAVED, "Compare status of patient " + key);
+            assert.strictEqual(patient.status, PatientStatus.PROCESSED, "Compare status of patient " + key);
         }
 
         // request

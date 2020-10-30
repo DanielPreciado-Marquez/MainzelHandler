@@ -47,7 +47,8 @@
  * -1: The IDAT is invalid. This should be prevented by createIDAT.
  * 0: The patient got successful created and has valid IDAT.
  * 1: The pseudonym has benn created.
- * 11: The storing the MDAT was successful.
+ * 11: The server processed the MDAT was successfully.
+ * 12: The server did not processed the MDAT was successfully.
  * 21: Patient was successfully found in the database.
  * 22: There is no patient with the given IDAT.
  * @typedef {number} PatientStatus
@@ -58,9 +59,8 @@ const PatientStatus = Object.freeze({
     IDAT_INVALID: -1,
     CREATED: 0,
     PSEUDONYMIZED: 1,
-    // TODO rename e.g 'SEND', 'HANDLED'
-    SAVED: 11,
-    // TODO: Conflict with send data? e.g. 'NOT_SEND', 'NOT_HANDLED'
+    PROCESSED: 11,
+    NOT_PROCESSED: 12,
     FOUND: 21,
     NOT_FOUND: 22,
 });
@@ -215,7 +215,7 @@ function PseudonymizationService(serverURL) {
      * Stores the given patients.
      * @param {Map<patientId, Patient>} patients - Map with the patients.
      * @param {patientId[]} [patientIds=Array.from(patients.keys())] - Array of patientIds of the patients to be stored.
-     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, SAVED should be send again.
+     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be send again.
      * @throws Throws an exception if the pseudonymization server is not available.
      * @throws Throws an exception if the database is not available.
      */
@@ -231,7 +231,7 @@ function PseudonymizationService(serverURL) {
      * Requests the MDAT of the given patients.
      * @param {Map<patientId, Patient>} patients - Map with the patients.
      * @param {patientId[]} [patientIds=Array.from(patients.keys())] - Array of patientIds of the patients to be searched.
-     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, SAVED should be requested again.
+     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be requested again.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
@@ -268,7 +268,7 @@ function PseudonymizationService(serverURL) {
      * Every other status will be ignored.
      * @param {Map<patientId, Patient>} patients - Map with the patients.
      * @param {patientId[]} patientIds - Array of patientIds of the patients to get pseudonymized.
-     * @param {boolean} includeSucceeded - Indicates if patients with status FOUND, NOT_FOUND, SAVED should included.
+     * @param {boolean} includeSucceeded - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should included.
      * @returns {Promise<patientId[]>} - Array with the patientIds of successful pseudonymized patients.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
@@ -296,9 +296,10 @@ function PseudonymizationService(serverURL) {
                     pseudonymized.push(key);
                     break;
 
+                case PatientStatus.PROCESSED:
+                case PatientStatus.NOT_PROCESSED:
                 case PatientStatus.FOUND:
                 case PatientStatus.NOT_FOUND:
-                case PatientStatus.SAVED:
                     if (includeSucceeded)
                         pseudonymized.push(key);
                     break;
@@ -346,7 +347,6 @@ function PseudonymizationService(serverURL) {
     /**
      * Sends patients to the server.
      * The patients must have a pseudonym.
-     * TODO: give response if the patient got send successfully.
      * @param {Map<patientId, Patient>} patients - Map with patients.
      * @param {patientId[]} patientIds - Array of patientIds of the patients to be send.
      * @throws Throws an exception if the server is not available.
@@ -356,8 +356,8 @@ function PseudonymizationService(serverURL) {
 
         const dataArray = [];
 
-        for (let i = 0; i < patientIds.length; ++i) {
-            const patient = patients.get(patientIds[i]);
+        for (const key of patientIds) {
+            const patient = patients.get(key);
 
             dataArray.push({
                 pseudonym: patient.pseudonym,
@@ -383,10 +383,13 @@ function PseudonymizationService(serverURL) {
         if (!response.ok)
             throw new Error(await response.text());
 
-        // TODO: is a response form the server necessary?
-        for (const key of patientIds) {
+        const successArray = await response.json();
+
+        for (let i = 0; i < patientIds.length; i++) {
+            const key = patientIds[i];
+            const success = successArray[i];
             const patient = patients.get(key);
-            patient.status = PatientStatus.SAVED;
+            patient.status = success ? PatientStatus.PROCESSED : PatientStatus.NOT_PROCESSED;
         }
     }
 
