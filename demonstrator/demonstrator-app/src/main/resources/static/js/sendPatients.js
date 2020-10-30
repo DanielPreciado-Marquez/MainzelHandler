@@ -86,8 +86,12 @@ function updateList() {
                 addSureButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
-            case PatientStatus.SAVED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gesendet, patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
+            case PatientStatus.PROCESSED:
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gespeichert, patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
+                addDeleteButton(key, listElement);
+                break;
+            case PatientStatus.NOT_PROCESSED:
+                listElement.appendChild(document.createTextNode("key: " + key + ", status: Nicht Gespeichert, patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
                 addDeleteButton(key, listElement);
                 break;
         }

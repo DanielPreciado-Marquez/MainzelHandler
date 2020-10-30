@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Depseudonymisierung</title>
+    <script type="text/javascript" th:src="@{/js/pseudonymizationService.js}"></script>
+    <script type="text/javascript" th:src="@{/js/depseudonymization.js}"></script>
+</head>
+
+<body>
+    <div id="root">
+
+        <h1>Patienten depseudonymisieren</h1>
+
+        <h2>Pseudonym hinzufügen</h2>
+        <form id="pseudonym-form">
+            <label for="pseudonym-input">Pseudonym:</label><br>
+            <input type="text" id="pseudonym-input"><br>
+
+            <input type="button" id="add-pseudonym-button" value="Hinzufügen">
+            <p id="idat-error" style="color: red;"></p>
+        </form>
+
+        <div>
+            <h2>Pseudonyme:</h2>
+            <ul id="pseudonym-list"></ul>
+        </div>
+
+        <button type="submit" id="depseudonymize-button">Depseudonymisieren</button>
+
+        <p id="server-error" style="color: red;"></p>
+    </div>
+</body>
+
+<script type="text/javascript" th:inline="javascript">
+    const contextPath = /*[[@{/}]]*/ '/';
+</script>
+
+</html>

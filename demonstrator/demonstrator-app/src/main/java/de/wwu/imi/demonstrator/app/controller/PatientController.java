@@ -25,27 +25,32 @@ public class PatientController extends AbstractPseudonymizationController {
 	private PatientRepository patientRepository;
 
 	@Override
-	public void acceptPatients(List<Patient> patients) {
+	public List<Boolean> acceptPatients(List<Patient> patients) {
 		LOGGER.debug("Storing " + patients.size() + " patients");
 
+		final List<Boolean> success = new ArrayList<Boolean>(patients.size());
+
 		for (final var patient : patients) {
-			LOGGER.trace("Storing Patient: " + patient.toString());
+			LOGGER.debug("Storing Patient: " + patient.toString());
 
 			final var patientEntity = new PatientEntity(patient);
-
 			patientRepository.save(patientEntity);
+
+			success.add(true);
 		}
 		LOGGER.debug("Storing completed");
+
+		return success;
 	}
 
 	@Override
 	public List<Patient> requestPatients(List<String> pseudonyms) {
 		LOGGER.debug("Requesting " + pseudonyms.size() + " patients");
 
-		final var patients = new ArrayList<Patient>();
+		final var patients = new ArrayList<Patient>(pseudonyms.size());
 
 		for (final String pseudonym : pseudonyms) {
-			LOGGER.trace("Searching: " + pseudonym);
+			LOGGER.debug("Searching: " + pseudonym);
 
 			final var patientEntity = patientRepository.findById(pseudonym);
 

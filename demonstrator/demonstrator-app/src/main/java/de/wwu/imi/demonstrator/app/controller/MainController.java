@@ -27,6 +27,11 @@ public class MainController {
 		return "requestPatients";
 	}
 
+	@GetMapping("/depseudonymization")
+	public String depseudonymization(Model model) {
+		return "depseudonymization";
+	}
+
 	// Test sites
 	@GetMapping("/utilTest")
 	public String utilTest(Model model) {
