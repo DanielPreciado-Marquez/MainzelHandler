@@ -9,9 +9,9 @@ window.onload = function () {
     QUnit.start();
 }
 
-QUnit.module('sendPatients', () => {
+QUnit.module('pseudonymization', () => {
 
-    QUnit.test('successful pseudonymization', async assert => {
+    QUnit.test('sendPatients', async assert => {
         assert.expect(4);
 
         const patients = new Map();
@@ -67,7 +67,7 @@ QUnit.module('sendPatients', () => {
         assert.strictEqual(patient1.tokenURL, null, 'Compare tokenURL');
     });
 
-    QUnit.test('Successful depseudonymization', async assert => {
+    QUnit.test('requestPatients', async assert => {
         assert.expect(4);
 
         const patients = new Map();
@@ -94,5 +94,78 @@ QUnit.module('sendPatients', () => {
 
         assert.strictEqual(patient1.status, PatientStatus.FOUND, 'Compare status');
         assert.deepEqual(patient1.mdat, mdat, 'Compare MDAT');
+    });
+});
+
+QUnit.module('depseudonymization', hooks => {
+
+    const patients = new Map();
+    const firstname = "Integration";
+    const lastname = "Test";
+    const birthday = new Date("01-01-2000");
+
+    hooks.before(async () => {
+        // make sure the patient exists
+        const patient0 = pseudonymizationService.createPatient(firstname, lastname, birthday);
+        patients.set(0, patient0);
+        await pseudonymizationService.sendPatients(patients);
+    });
+
+    QUnit.test('successful depseudonymization', async assert => {
+        assert.expect(6);
+
+        const pseudonym = 'H0N587RL';
+        const { depseudonymized, invalid } = await pseudonymizationService.depseudonymize(pseudonym);
+
+        assert.strictEqual(depseudonymized.size, 1, "Check amount of depseudonymized");
+        assert.true(depseudonymized.has(pseudonym), "Check if pseudonym got depseudonymized");
+        assert.strictEqual(invalid.length, 0, "Check amount of invalid pseudonyms")
+
+        const idat = depseudonymized.get(pseudonym);
+
+        assert.strictEqual(idat.firstname, firstname, "Compare firstname");
+        assert.strictEqual(idat.lastname, lastname, "Compare lastname");
+        assert.strictEqual(idat.birthday.getTime(), birthday.getTime(), "Compare birthday");
+    });
+
+    QUnit.test('invalid depseudonymization', async assert => {
+        assert.expect(3);
+
+        const pseudonym = '';
+        const { depseudonymized, invalid } = await pseudonymizationService.depseudonymize(pseudonym);
+
+        assert.strictEqual(depseudonymized.size, 0, "Check amount of depseudonymized");
+        assert.strictEqual(invalid.length, 1, "Check amount of invalid pseudonyms");
+        assert.true(invalid.includes(pseudonym), "Check if pseudonym is invalid");
+    });
+
+    QUnit.test('mixed depseudonymization', async assert => {
+        assert.expect(9);
+
+        // TODO add another valid pseudonym
+        const pseudonym0 = '';
+        const pseudonym1 = 'H0N587RL';
+        const pseudonym2 = 'Hello!';
+        const pseudonym3 = 'H0N587RL';
+        const pseudonym4 = 'Hello!';
+
+        const pseudonyms = [pseudonym0, pseudonym1, pseudonym2, pseudonym3, pseudonym4];
+
+        const { depseudonymized, invalid } = await pseudonymizationService.depseudonymize(pseudonyms);
+
+        assert.strictEqual(depseudonymized.size, 1, "Check amount of depseudonymized");
+        assert.true(depseudonymized.has(pseudonym1), "Check if pseudonym got depseudonymized");
+
+        const idat = depseudonymized.get(pseudonym1);
+
+        assert.strictEqual(idat.firstname, firstname, "Compare firstname");
+        assert.strictEqual(idat.lastname, lastname, "Compare lastname");
+        assert.strictEqual(idat.birthday.getTime(), birthday.getTime(), "Compare birthday");
+
+
+        assert.strictEqual(invalid.length, 2, "Check amount of invalid pseudonyms");
+        assert.true(invalid.includes(pseudonym0), "Check if pseudonym is invalid: " + pseudonym0);
+        assert.true(invalid.includes(pseudonym2), "Check if pseudonym is invalid: " + pseudonym2);
+        assert.true(invalid.includes(pseudonym4), "Check if pseudonym is invalid: " + pseudonym4);
     });
 });
