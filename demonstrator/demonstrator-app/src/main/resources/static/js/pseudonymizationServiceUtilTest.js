@@ -5,7 +5,7 @@ QUnit.config.autostart = false;
 var pseudonymizationService;
 
 window.onload = function () {
-    pseudonymizationService = new PseudonymizationService(contextPath);
+    pseudonymizationService = new PseudonymizationService(contextPath + requestPath);
     QUnit.start();
 }
 
