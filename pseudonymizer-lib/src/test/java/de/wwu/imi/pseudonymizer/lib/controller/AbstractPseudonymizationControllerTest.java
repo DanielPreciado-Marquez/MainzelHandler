@@ -20,7 +20,7 @@ class AbstractPseudonymizationControllerTest {
 	private static AbstractPseudonymizationController controller = Mockito
 			.mock(AbstractPseudonymizationController.class, Mockito.CALLS_REAL_METHODS);
 
-	private static final String mainzellisteUrl = "https://zbb-mfm-dev.uni-muenster.de/mainzelliste/";
+	private static final String mainzellisteUrl = "http://localhost:8080/";
 	private static final String mainzellisteApiKey = "123BachelorArbeit321";
 
 	@BeforeAll
@@ -31,15 +31,17 @@ class AbstractPseudonymizationControllerTest {
 
 	@Test
 	void getAddPatientTokenTest() {
-		final String[] result = controller.getPseudonymizationURL("1");
+		final int urlLength = mainzellisteUrl.length();
 
+		final String[] result = controller.getPseudonymizationURL("1", "false");
 		assertEquals(1, result.length);
-		assertEquals(102, result[0].length());
-		assertEquals(mainzellisteUrl + "patients?tokenId=", result[0].substring(0, 66));
 
-		final var token = result[0].substring(66, 102);
-		final var parts = token.split("-");
-		assertEquals(5, parts.length);
+		final String tokenUrl = result[0];
+		assertEquals(53 + urlLength, tokenUrl.length());
+
+		final String[] tokenUrlParts = tokenUrl.split("=");
+		assertEquals(mainzellisteUrl + "patients?tokenId", tokenUrlParts[0]);
+		assertEquals(5, tokenUrlParts[1].split("-").length);
 	}
 
 	/**
@@ -47,21 +49,24 @@ class AbstractPseudonymizationControllerTest {
 	 */
 	@Test
 	void get10000AddPatientTokensTest() {
-		final String[] result = controller.getPseudonymizationURL("10000");
+		final int urlLength = mainzellisteUrl.length();
+
+		final String[] result = controller.getPseudonymizationURL("10000", "false");
 		assertEquals(10000, result.length);
 
-		for (final var token : result) {
-			assertEquals(102, token.length());
-			assertEquals(mainzellisteUrl + "patients?tokenId=", token.substring(0, 66));
+		for (final String tokenUrl : result) {
+			assertEquals(53 + urlLength, tokenUrl.length());
+			assertEquals(mainzellisteUrl + "patients?tokenId", tokenUrl.split("=")[0]);
 		}
 	}
 
 	@Test
 	void getReadPatientsTokenTest() {
+		final int urlLength = mainzellisteUrl.length();
 		final List<String> pseudonyms = new ArrayList<String>();
 
 		final String pseudonym0 = "Hello!";
-		final String pseudonym1 = "H0N587RL";
+		final String pseudonym1 = "0007W0W9";
 		final String pseudonym2 = "";
 
 		pseudonyms.add(pseudonym0);
@@ -69,11 +74,11 @@ class AbstractPseudonymizationControllerTest {
 		pseudonyms.add(pseudonym2);
 
 		final DepseudonymizationResponse resopnse = controller.getDepseudonymizationURL(pseudonyms);
-		final String url = resopnse.getUrl();
+		final String tokenUrl = resopnse.getUrl();
 		final List<String> invalidPseudonyms = resopnse.getInvalidPseudonyms();
 
-		assertEquals(102, url.length(), "Length of the URL is wrong");
-		assertEquals(mainzellisteUrl + "patients?tokenId=", url.substring(0, 66));
+		assertEquals(53 + urlLength, tokenUrl.length(), "Length of the URL is wrong");
+		assertEquals(mainzellisteUrl + "patients?tokenId", tokenUrl.split("=")[0]);
 
 		assertEquals(2, invalidPseudonyms.size());
 		assertTrue(invalidPseudonyms.contains(pseudonym0));
