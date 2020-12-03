@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
@@ -96,15 +95,14 @@ public abstract class AbstractPseudonymizationController {
 	 * Handles the tokening with the Mainzelliste and returns an Array of urls
 	 * containing the token.
 	 *
-	 * @param body Map containing the key-value-pairs of the request body.
+	 * @param amount      Amount of requested addPatient token.
+	 * @param useCallback Indicates if the callback function of the mainzelliste
+	 *                    should be used.
 	 * @return Array of urls for pseudonymizations.
 	 */
 	@PostMapping("/tokens/addPatient")
-	public final String[] getPseudonymizationURL(@RequestBody final Map<String, Object> body) {
-
-		final boolean useCallback = body.containsKey("useCallback") ? (boolean) body.get("useCallback") : false;
-		final int amount = body.containsKey("amount") ? (int) body.get("amount") : 1;
-
+	public final String[] getPseudonymizationURL(@RequestBody final int amount,
+			@RequestParam(value = "useCallback", defaultValue = "false") final boolean useCallback) {
 		LOGGER.info("Requesting " + amount + " 'addPatient' tokens with useCallback=" + useCallback);
 
 		HttpClient httpClient = HttpClientBuilder.create().build();
@@ -150,19 +148,19 @@ public abstract class AbstractPseudonymizationController {
 	/**
 	 * Accepts a list of patients to be handled by the application.
 	 *
-	 * @param patients List of patients.
+	 * @param patients    List of patients.
+	 * @param useCallback Indicates if the callback function of the mainzelliste
+	 *                    should be used.
 	 */
 	@PostMapping("/patients/send/mdat")
 	public final List<Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients,
-			@RequestParam(value = "useCallback", defaultValue = "false") final String useCallbackParam) {
-
-		final boolean useCallback = Boolean.parseBoolean(useCallbackParam);
+			@RequestParam(value = "useCallback", defaultValue = "false") final boolean useCallback) {
+		LOGGER.info("Recieved " + patients.size() + "patients with useCallback=" + useCallback);
 
 		if (useCallback) {
 			for (final Patient patient : patients) {
 				final String token = patient.getPseudonym();
 				final String pseudonym = pseudonymManager.removeToken(token);
-				LOGGER.debug(pseudonym);
 				patient.setPseudonym(pseudonym);
 			}
 		}
@@ -171,14 +169,14 @@ public abstract class AbstractPseudonymizationController {
 	}
 
 	/**
-	 * Accepts a list of patients to be handled by the application.
+	 * Accepts the callback request from the mainzelliste.
 	 *
-	 * @param patients List of patients.
+	 * @param requestBody Token and pseudonym of the pseudonymization.
 	 */
 	@PostMapping("/patients/send/pseudonyms")
-	public final void acceptPatientsPseudonymsRequest(@RequestBody final String body) {
-		LOGGER.debug("Recieved pseudonym from mainzelliste: " + body);
-		pseudonymManager.putPseudonym(body);
+	public final void acceptPatientsPseudonymsRequest(@RequestBody final String requestBody) {
+		LOGGER.debug("Recieved pseudonym from mainzelliste: " + requestBody);
+		pseudonymManager.putPseudonym(requestBody);
 	}
 
 	/**
@@ -186,22 +184,26 @@ public abstract class AbstractPseudonymizationController {
 	 * order as the given pseudonyms. If the mdat is not available, an empty String
 	 * will be returned.
 	 *
-	 * @param pseudonyms List of pseudonyms of the requsted patients.
+	 * @param ids         List of ids of the requsted patients. An id is either a
+	 *                    pseudonym or the token used for the pseudonymization.
+	 * @param useCallback Indicates if the callback function of the mainzelliste
+	 *                    should be used.
 	 * @return List of mdat.
 	 */
 	@PostMapping("/patients/request")
 	public final List<String> requestPatientsRequest(@RequestBody List<String> ids,
-			@RequestParam(value = "useCallback", defaultValue = "false") final String useCallbackParam) {
+			@RequestParam(value = "useCallback", defaultValue = "false") final boolean useCallback) {
 
-		LOGGER.debug("Requesting " + ids.size() + " patients");
-
-		final boolean useCallback = Boolean.parseBoolean(useCallbackParam);
+		LOGGER.debug("Requesting " + ids.size() + " patients with useCallback=" + useCallback);
 
 		if (useCallback) {
-			final List<String> pseudonyms = new ArrayList<String>(ids.size());
+			final List<String> pseudonyms = new ArrayList<String>();
 			for (final String token : ids) {
-				final String pseudonym = pseudonymManager.removeToken(token);
-				pseudonyms.add(pseudonym);
+				if (pseudonymManager.containsToken(token)) {
+					pseudonyms.add(pseudonymManager.removeToken(token));
+				} else {
+					LOGGER.debug("No corresponding pseudonym found for token: " + token);
+				}
 			}
 			ids = pseudonyms;
 		}

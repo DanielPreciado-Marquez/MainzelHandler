@@ -520,19 +520,14 @@ function PseudonymizationService(serverURL, useCallback) {
      * @throws Throws an exception if the server is not available.
      */
     async function getPseudonymizationURL(amount) {
-        const requestURL = serverURL + "/tokens/addPatient";
-
-        const body = {
-            'amount': amount,
-            'useCallback': useCallback
-        };
+        const requestURL = serverURL + "/tokens/addPatient" + "?useCallback=" + useCallback;
 
         const options = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(body)
+            body: amount
         };
 
         console.log(options);
