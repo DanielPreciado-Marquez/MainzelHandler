@@ -45,9 +45,10 @@ public class PseudonymManager {
 	}
 
 	public String removeToken(final String token) {
-		LOGGER.debug("Removing: " + token);
 		creationTimes.remove(token);
-		return pseudonyms.remove(token);
+		final String pseudonym = pseudonyms.remove(token);
+		LOGGER.debug("Removing: " + token + ", " + pseudonym);
+		return pseudonym;
 	}
 
 	@Scheduled(fixedRate = 60000)
