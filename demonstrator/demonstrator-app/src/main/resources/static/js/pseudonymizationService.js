@@ -65,17 +65,15 @@ const PatientStatus = Object.freeze({
     NOT_FOUND: 22,
 });
 
-const PseudonymStatus = Object.freeze({
-    CREATED: 0,
-    FOUND: 1,
-    NOT_FOUND: 2
-});
-
 /**
  * This module is used to connect to the configured Pseudonymization service.
  * TODO: Maybe change patient into a class to prevent manuel changing the properties
+ * @param {string} serverURL - URL of the MDAT server.
+ * @param {boolean} [useCallback=false] - Indicates if the callback function of the Mainzelliste should be used. (WIP)
  */
-function PseudonymizationService(serverURL) {
+function PseudonymizationService(serverURL, useCallback) {
+    useCallback = useCallback ?? false;
+
     const service = {};
 
     /**
@@ -337,7 +335,7 @@ function PseudonymizationService(serverURL) {
 
         for (const entry of responseArray) {
             const pseudonym = entry.ids[0].idString;
-            const idat = service.createIDAT(entry.fields.vorname, entry.fields.nachname, new Date(entry.fields.geburtsmonat + "-" + entry.fields.geburtstag + "-" + entry.fields.geburtsjahr));
+            const idat = service.createIDAT(entry.fields.vorname, entry.fields.nachname, entry.fields.geburtsjahr + "-" + entry.fields.geburtsmonat + "-" + entry.fields.geburtstag);
             depseudonymized.set(pseudonym, idat);
         }
 
@@ -365,7 +363,7 @@ function PseudonymizationService(serverURL) {
             });
         }
 
-        const requestURL = serverURL + "api/patients/send";
+        const requestURL = serverURL + "api/patients/send" + "?useCallback=" + useCallback;
 
         const options = {
             method: 'POST',
@@ -409,7 +407,7 @@ function PseudonymizationService(serverURL) {
             dataArray.push(patients.get(patientIds[i]).pseudonym);
         }
 
-        const requestURL = serverURL + "api/patients/request";
+        const requestURL = serverURL + "api/patients/request" + "?useCallback=" + useCallback;
 
         const options = {
             method: 'POST',
@@ -420,8 +418,6 @@ function PseudonymizationService(serverURL) {
         };
 
         const response = await fetch(requestURL, options);
-
-
 
         if (typeof response === 'undefined')
             throw new Error("Server not available");
@@ -524,7 +520,7 @@ function PseudonymizationService(serverURL) {
      * @throws Throws an exception if the server is not available.
      */
     async function getPseudonymizationURL(amount) {
-        const requestURL = serverURL + "api/tokens/addPatient/" + amount;
+        const requestURL = serverURL + "api/tokens/addPatient/" + amount + "?useCallback=" + useCallback;
 
         const response = await fetch(requestURL);
 
@@ -620,7 +616,7 @@ function PseudonymizationService(serverURL) {
         switch (response.status) {
             case 201:
                 const responseBody = await response.json();
-                patient.pseudonym = responseBody.newId;
+                patient.pseudonym = (useCallback) ? requestURL.split("=")[1] : responseBody.newId
                 patient.status = PatientStatus.PSEUDONYMIZED;
                 patient.tokenURL = null;
                 break;
