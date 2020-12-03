@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
@@ -23,8 +24,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -97,22 +96,22 @@ public abstract class AbstractPseudonymizationController {
 	 * Handles the tokening with the Mainzelliste and returns an Array of urls
 	 * containing the token.
 	 *
-	 * @param amount Amount of tokens.
+	 * @param body Map containing the key-value-pairs of the request body.
 	 * @return Array of urls for pseudonymizations.
 	 */
-	@GetMapping("/tokens/addPatient/{amount}")
-	public final String[] getPseudonymizationURL(@PathVariable("amount") final String amount,
-			@RequestParam(value = "useCallback", defaultValue = "false") final String useCallbackParam) {
+	@PostMapping("/tokens/addPatient")
+	public final String[] getPseudonymizationURL(@RequestBody final Map<String, Object> body) {
 
-		final var amountParsed = Integer.parseInt(amount);
-		final boolean useCallback = Boolean.parseBoolean(useCallbackParam);
-		LOGGER.info("Requesting " + amount + " 'addPatient' tokens with useCallback=" + useCallbackParam);
+		final boolean useCallback = body.containsKey("useCallback") ? (boolean) body.get("useCallback") : false;
+		final int amount = body.containsKey("amount") ? (int) body.get("amount") : 1;
+
+		LOGGER.info("Requesting " + amount + " 'addPatient' tokens with useCallback=" + useCallback);
 
 		HttpClient httpClient = HttpClientBuilder.create().build();
 		String sessionURL = getSessionURL(httpClient);
 
-		var urlTokens = new String[amountParsed];
-		for (int i = 0; i < amountParsed; i++) {
+		final String[] urlTokens = new String[amount];
+		for (int i = 0; i < amount; i++) {
 			urlTokens[i] = mainzellisteUrl + "patients?tokenId="
 					+ getAddPatientToken(sessionURL, httpClient, useCallback);
 		}
@@ -153,7 +152,7 @@ public abstract class AbstractPseudonymizationController {
 	 *
 	 * @param patients List of patients.
 	 */
-	@PostMapping("/patients/send")
+	@PostMapping("/patients/send/mdat")
 	public final List<Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients,
 			@RequestParam(value = "useCallback", defaultValue = "false") final String useCallbackParam) {
 
@@ -207,13 +206,14 @@ public abstract class AbstractPseudonymizationController {
 			ids = pseudonyms;
 		}
 
-		final var patients = requestPatients(ids);
-		final var mdat = patients.stream().map(patient -> patient.getMdatString()).collect(Collectors.toList());
+		final List<Patient> patients = requestPatients(ids);
+		final List<String> mdat = patients.stream().map(patient -> patient.getMdatString())
+				.collect(Collectors.toList());
 		return mdat;
 	}
 
 	@ExceptionHandler({ MainzellisteException.class, MainzellisteConnectionException.class })
-	public ResponseEntity<Object> handlePseudonymizationServerException(final Exception exception) {
+	public final ResponseEntity<Object> handlePseudonymizationServerException(final Exception exception) {
 		return new ResponseEntity<>(exception.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
 	}
 

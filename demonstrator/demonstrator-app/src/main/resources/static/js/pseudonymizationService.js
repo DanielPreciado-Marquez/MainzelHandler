@@ -363,7 +363,7 @@ function PseudonymizationService(serverURL, useCallback) {
             });
         }
 
-        const requestURL = serverURL + "api/patients/send" + "?useCallback=" + useCallback;
+        const requestURL = serverURL + "/patients/send/mdat" + "?useCallback=" + useCallback;
 
         const options = {
             method: 'POST',
@@ -407,7 +407,7 @@ function PseudonymizationService(serverURL, useCallback) {
             dataArray.push(patients.get(patientIds[i]).pseudonym);
         }
 
-        const requestURL = serverURL + "api/patients/request" + "?useCallback=" + useCallback;
+        const requestURL = serverURL + "/patients/request" + "?useCallback=" + useCallback;
 
         const options = {
             method: 'POST',
@@ -520,9 +520,24 @@ function PseudonymizationService(serverURL, useCallback) {
      * @throws Throws an exception if the server is not available.
      */
     async function getPseudonymizationURL(amount) {
-        const requestURL = serverURL + "api/tokens/addPatient/" + amount + "?useCallback=" + useCallback;
+        const requestURL = serverURL + "/tokens/addPatient";
 
-        const response = await fetch(requestURL);
+        const body = {
+            'amount': amount,
+            'useCallback': useCallback
+        };
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        };
+
+        console.log(options);
+
+        const response = await fetch(requestURL, options);
 
         if (typeof response === 'undefined')
             throw new Error("Server not available");
@@ -544,7 +559,7 @@ function PseudonymizationService(serverURL, useCallback) {
      * @throws Throws an exception if the server is not available.
      */
     async function getDepseudonymizationURL(pseudonyms) {
-        const requestURL = serverURL + "api/tokens/readPatients";
+        const requestURL = serverURL + "/tokens/readPatients";
 
         const options = {
             method: 'POST',

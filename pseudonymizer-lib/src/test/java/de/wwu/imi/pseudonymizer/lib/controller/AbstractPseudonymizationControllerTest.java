@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -32,8 +33,9 @@ class AbstractPseudonymizationControllerTest {
 	@Test
 	void getAddPatientTokenTest() {
 		final int urlLength = mainzellisteUrl.length();
+		final Map<String, Object> body = Map.of("amount", 1, "useCallback", false);
 
-		final String[] result = controller.getPseudonymizationURL("1", "false");
+		final String[] result = controller.getPseudonymizationURL(body);
 		assertEquals(1, result.length);
 
 		final String tokenUrl = result[0];
@@ -50,8 +52,9 @@ class AbstractPseudonymizationControllerTest {
 	@Test
 	void get10000AddPatientTokensTest() {
 		final int urlLength = mainzellisteUrl.length();
+		final Map<String, Object> body = Map.of("amount", 10000, "useCallback", false);
 
-		final String[] result = controller.getPseudonymizationURL("10000", "false");
+		final String[] result = controller.getPseudonymizationURL(body);
 		assertEquals(10000, result.length);
 
 		for (final String tokenUrl : result) {
