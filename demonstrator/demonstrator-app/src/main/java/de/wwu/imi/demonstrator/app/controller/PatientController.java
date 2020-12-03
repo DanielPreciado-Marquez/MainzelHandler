@@ -6,7 +6,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import de.wwu.imi.demonstrator.app.entities.PatientEntity;
@@ -16,7 +15,6 @@ import de.wwu.imi.pseudonymizer.lib.model.Patient;
 
 @RestController
 @CrossOrigin
-@RequestMapping("/api")
 public class PatientController extends AbstractPseudonymizationController {
 
 	private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PatientController.class);
