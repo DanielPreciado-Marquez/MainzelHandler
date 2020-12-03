@@ -14,9 +14,9 @@ QUnit.module('createIDAT', () => {
     QUnit.test('Create IDAT with a string for the Date', assert => {
         assert.expect(3);
 
-        const idat = pseudonymizationService.createIDAT("a", "s", "08-10-2020");
+        const idat = pseudonymizationService.createIDAT("a", "s", "2020-10-20");
 
-        assert.strictEqual(idat.birthday.getTime(), new Date("08-10-2020").getTime(), 'Compare birthday');
+        assert.strictEqual(idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
         assert.strictEqual(idat.firstname, "a", 'Compare firstname');
         assert.strictEqual(idat.lastname, "s", 'Compare lastname');
     });
@@ -34,9 +34,9 @@ QUnit.module('createIDAT', () => {
     QUnit.test('Create IDAT with a Date for the Date', assert => {
         assert.expect(3);
 
-        const idat = pseudonymizationService.createIDAT("e", " r ", new Date("10-10-2020"));
+        const idat = pseudonymizationService.createIDAT("e", " r ", new Date("2020-10-20"));
 
-        assert.strictEqual(idat.birthday.getTime(), new Date("10-10-2020").getTime(), 'Compare birthday');
+        assert.strictEqual(idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
         assert.strictEqual(idat.firstname, "e", 'Compare firstname');
         assert.strictEqual(idat.lastname, "r", 'Compare lastname');
     });
@@ -167,21 +167,21 @@ QUnit.module('createPatient', () => {
     QUnit.test('Create regular with MDAT undefined', assert => {
         assert.expect(1);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
         assert.deepEqual(patient.mdat, {}, 'Compare MDAT');
     });
 
     QUnit.test('Create regular with MDAT null', assert => {
         assert.expect(1);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020", null);
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20", null);
         assert.deepEqual(patient.mdat, {}, 'Compare MDAT');
     });
 
     QUnit.test('Create regular with MDAT', assert => {
         assert.expect(1);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020", { height: 180 });
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20", { height: 180 });
         assert.deepEqual(patient.mdat, { height: 180 }, 'Compare MDAT');
     });
 
@@ -190,7 +190,7 @@ QUnit.module('createPatient', () => {
 
         assert.throws(
             () => {
-                pseudonymizationService.createPatient("a", "s", "08-10-2020", "");
+                pseudonymizationService.createPatient("a", "s", "2020-10-20", "");
             },
             /Invalid MDAT!/,
             'MDAT wrong type (string)'
@@ -202,7 +202,7 @@ QUnit.module('createPatient', () => {
 
         assert.throws(
             () => {
-                pseudonymizationService.createPatient("a", "s", "08-10-2020", [1, 2, 3]);
+                pseudonymizationService.createPatient("a", "s", "2020-10-20", [1, 2, 3]);
             },
             /Invalid MDAT!/,
             'MDAT wrong type (Array)'
@@ -215,10 +215,10 @@ QUnit.module('updateIDAT', () => {
     QUnit.test('Update CREATED', assert => {
         assert.expect(3);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020");
-        pseudonymizationService.updateIDAT(patient, "q", "w", "09-10-2020");
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
+        pseudonymizationService.updateIDAT(patient, "q", "w", "2020-10-21");
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("09-10-2020").getTime(), 'Compare birthday');
+        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-21").getTime(), 'Compare birthday');
         assert.strictEqual(patient.idat.firstname, "q", 'Compare firstname');
         assert.strictEqual(patient.idat.lastname, "w", 'Compare lastname');
     });
@@ -230,9 +230,9 @@ QUnit.module('updateIDAT', () => {
         patient.status = PatientStatus.IDAT_CONFLICT;
         patient.tokenURL = "http://tokenURL";
 
-        pseudonymizationService.updateIDAT(patient, "q", "w", "09-10-2020");
+        pseudonymizationService.updateIDAT(patient, "q", "w", "2020-10-21");
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("09-10-2020").getTime(), 'Compare birthday');
+        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-21").getTime(), 'Compare birthday');
         assert.strictEqual(patient.idat.firstname, "q", 'Compare firstname');
         assert.strictEqual(patient.idat.lastname, "w", 'Compare lastname');
         assert.strictEqual(patient.status, PatientStatus.IDAT_CONFLICT, 'Compare status');
@@ -242,13 +242,13 @@ QUnit.module('updateIDAT', () => {
     QUnit.test('Update PSEUDONYMIZED different firstname', assert => {
         assert.expect(5);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
         patient.status = PatientStatus.PSEUDONYMIZED;
         patient.pseudonym = "pseudonym";
 
-        pseudonymizationService.updateIDAT(patient, "q", "s", "08-10-2020");
+        pseudonymizationService.updateIDAT(patient, "q", "s", "2020-10-20");
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("08-10-2020").getTime(), 'Compare birthday');
+        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
         assert.strictEqual(patient.idat.firstname, "q", 'Compare firstname');
         assert.strictEqual(patient.idat.lastname, "s", 'Compare lastname');
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status');
@@ -258,13 +258,13 @@ QUnit.module('updateIDAT', () => {
     QUnit.test('Update PSEUDONYMIZED different lastname', assert => {
         assert.expect(5);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
         patient.status = PatientStatus.PSEUDONYMIZED;
         patient.pseudonym = "pseudonym";
 
-        pseudonymizationService.updateIDAT(patient, "a", "w", "08-10-2020");
+        pseudonymizationService.updateIDAT(patient, "a", "w", "2020-10-20");
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("08-10-2020").getTime(), 'Compare birthday');
+        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
         assert.strictEqual(patient.idat.firstname, "a", 'Compare firstname');
         assert.strictEqual(patient.idat.lastname, "w", 'Compare lastname');
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status');
@@ -274,13 +274,13 @@ QUnit.module('updateIDAT', () => {
     QUnit.test('Update PSEUDONYMIZED different birthday', assert => {
         assert.expect(5);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
         patient.status = PatientStatus.PSEUDONYMIZED;
         patient.pseudonym = "pseudonym";
 
-        pseudonymizationService.updateIDAT(patient, "a", "s", "09-10-2020");
+        pseudonymizationService.updateIDAT(patient, "a", "s", "2020-10-21");
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("09-10-2020").getTime(), 'Compare birthday');
+        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-21").getTime(), 'Compare birthday');
         assert.strictEqual(patient.idat.firstname, "a", 'Compare firstname');
         assert.strictEqual(patient.idat.lastname, "s", 'Compare lastname');
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status');
@@ -290,13 +290,13 @@ QUnit.module('updateIDAT', () => {
     QUnit.test('Update PSEUDONYMIZED same data', assert => {
         assert.expect(5);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
         patient.status = PatientStatus.PSEUDONYMIZED;
         patient.pseudonym = "pseudonym";
 
-        pseudonymizationService.updateIDAT(patient, "a", "s", "08-10-2020");
+        pseudonymizationService.updateIDAT(patient, "a", "s", "2020-10-20");
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("08-10-2020").getTime(), 'Compare birthday');
+        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
         assert.strictEqual(patient.idat.firstname, "a", 'Compare firstname');
         assert.strictEqual(patient.idat.lastname, "s", 'Compare lastname');
         assert.strictEqual(patient.status, PatientStatus.PSEUDONYMIZED, 'Compare status');
@@ -309,7 +309,7 @@ QUnit.module('updateMDAT', () => {
     QUnit.test('Update CREATED', assert => {
         assert.expect(4);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
 
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status before');
         assert.deepEqual(patient.mdat, {}, 'Compare MDAT before');
@@ -324,11 +324,10 @@ QUnit.module('updateMDAT', () => {
     QUnit.test('Update SAVED', assert => {
         assert.expect(4);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "08-10-2020");
-        // TODO: Update PatientStatus after rework
-        patient.status = PatientStatus.SAVED;
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
+        patient.status = PatientStatus.PROCESSED;
 
-        assert.strictEqual(patient.status, PatientStatus.SAVED, 'Compare status before');
+        assert.strictEqual(patient.status, PatientStatus.PROCESSED, 'Compare status before');
         assert.deepEqual(patient.mdat, {}, 'Compare MDAT before');
 
         const mdat = { testProperty: 0 };
@@ -347,19 +346,19 @@ QUnit.module('getPatients', hooks => {
     hooks.before(() => {
         patients = new Map();
 
-        const patient0 = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient0 = pseudonymizationService.createPatient("a", "s", "2020-10-20");
         patient0.status = PatientStatus.PSEUDONYMIZED;
         patients.set(0, patient0);
 
-        const patient1 = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient1 = pseudonymizationService.createPatient("a", "s", "2020-10-20");
         patient1.status = PatientStatus.IDAT_CONFLICT;
         patients.set(1, patient1);
 
-        const patient2 = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient2 = pseudonymizationService.createPatient("a", "s", "2020-10-20");
         patient2.status = PatientStatus.PSEUDONYMIZED;
         patients.set(2, patient2);
 
-        const patient3 = pseudonymizationService.createPatient("a", "s", "08-10-2020");
+        const patient3 = pseudonymizationService.createPatient("a", "s", "2020-10-20");
         patient3.status = PatientStatus.SAVED;
         patients.set(3, patient3);
     });

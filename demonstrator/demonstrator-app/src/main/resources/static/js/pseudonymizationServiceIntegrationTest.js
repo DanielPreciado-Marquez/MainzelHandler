@@ -5,7 +5,7 @@ QUnit.config.autostart = false;
 var pseudonymizationService;
 
 window.onload = function () {
-    pseudonymizationService = new PseudonymizationService(contextPath);
+    pseudonymizationService = new PseudonymizationService(contextPath, false);
     QUnit.start();
 }
 
@@ -16,16 +16,16 @@ QUnit.module('pseudonymization', () => {
 
         const patients = new Map();
 
-        const patient0 = pseudonymizationService.createPatient("Integration", "Test", "01-01-2000");
+        const patient0 = pseudonymizationService.createPatient("Integration", "Test", "2020-10-20");
         patients.set(0, patient0);
 
-        const patient1 = pseudonymizationService.createPatient("Integration", "Test", "01-01-2000");
+        const patient1 = pseudonymizationService.createPatient("Integration", "Test", "2020-10-20");
         patients.set(1, patient1);
 
         await pseudonymizationService.sendPatients(patients, [0]);
 
         assert.strictEqual(patient0.status, PatientStatus.PROCESSED, 'Compare status');
-        assert.strictEqual(patient0.pseudonym, "H0N587RL", 'Compare pseudonym');
+        assert.strictEqual(patient0.pseudonym, "000CU0WP", 'Compare pseudonym');
 
         assert.strictEqual(patient1.status, PatientStatus.CREATED, 'Compare status');
         assert.strictEqual(patient1.pseudonym, null, 'Compare pseudonym');
@@ -37,17 +37,17 @@ QUnit.module('pseudonymization', () => {
         const patients = new Map();
 
         // should be successful
-        const patient0 = pseudonymizationService.createPatient("Integration", "Test", "01-01-2000");
+        const patient0 = pseudonymizationService.createPatient("Integration", "Test", "2020-10-20");
         patients.set(0, patient0);
 
         // should create a conflict
-        const patient1 = pseudonymizationService.createPatient("Integration", "Test", "01-02-2020");
+        const patient1 = pseudonymizationService.createPatient("Integration", "Test", "2020-10-21");
         patients.set(1, patient1);
 
         await pseudonymizationService.sendPatients(patients);
 
         assert.strictEqual(patient0.status, PatientStatus.PROCESSED, 'Compare status');
-        assert.strictEqual(patient0.pseudonym, "H0N587RL", 'Compare pseudonym');
+        assert.strictEqual(patient0.pseudonym, "000CU0WP", 'Compare pseudonym');
         assert.strictEqual(patient0.tokenURL, null, 'Compare tokenURL');
 
         assert.strictEqual(patient1.status, PatientStatus.IDAT_CONFLICT, 'Compare status');
@@ -55,12 +55,12 @@ QUnit.module('pseudonymization', () => {
         assert.true((typeof patient1.tokenURL === 'string'), 'Check tokenURL');
 
         // should resolve the conflict
-        pseudonymizationService.updateIDAT(patient1, "Integration", "Test", "01-01-2000");
+        pseudonymizationService.updateIDAT(patient1, "Integration", "Test", "2020-10-20");
 
         await pseudonymizationService.sendPatients(patients);
 
         assert.strictEqual(patient1.status, PatientStatus.PROCESSED, 'Compare status');
-        assert.strictEqual(patient1.pseudonym, "H0N587RL", 'Compare pseudonym');
+        assert.strictEqual(patient1.pseudonym, "000CU0WP", 'Compare pseudonym');
         assert.strictEqual(patient1.tokenURL, null, 'Compare tokenURL');
     });
 
@@ -70,12 +70,12 @@ QUnit.module('pseudonymization', () => {
         const patients = new Map();
         let mdat = {testProperty: 0};
 
-        const patient0 = pseudonymizationService.createPatient("Integration", "Test", "01-01-2000", mdat);
+        const patient0 = pseudonymizationService.createPatient("Integration", "Test", "2020-10-20", mdat);
         patients.set(0, patient0);
 
         await pseudonymizationService.sendPatients(patients, [0]);
 
-        const patient1 = pseudonymizationService.createPatient("Integration", "Test", "01-01-2000");
+        const patient1 = pseudonymizationService.createPatient("Integration", "Test", "2020-10-20");
         patients.set(1, patient1);
 
         await pseudonymizationService.requestPatients(patients, [1]);
@@ -99,7 +99,7 @@ QUnit.module('depseudonymization', hooks => {
     const patients = new Map();
     const firstname = "Integration";
     const lastname = "Test";
-    const birthday = new Date("01-01-2000");
+    const birthday = new Date("2020-10-20");
 
     hooks.before(async () => {
         // make sure the patient exists
@@ -111,7 +111,7 @@ QUnit.module('depseudonymization', hooks => {
     QUnit.test('successful depseudonymization', async assert => {
         assert.expect(6);
 
-        const pseudonym = 'H0N587RL';
+        const pseudonym = '000CU0WP';
         const { depseudonymized, invalid } = await pseudonymizationService.depseudonymize(pseudonym);
 
         assert.strictEqual(depseudonymized.size, 1, "Check amount of depseudonymized");
@@ -137,28 +137,28 @@ QUnit.module('depseudonymization', hooks => {
     });
 
     QUnit.test('mixed depseudonymization', async assert => {
-        assert.expect(9);
+        assert.expect(10);
 
-        // TODO add another valid pseudonym
         const pseudonym0 = '';
-        const pseudonym1 = 'H0N587RL';
+        const pseudonym1 = '000CU0WP';
         const pseudonym2 = 'Hello!';
-        const pseudonym3 = 'H0N587RL';
+        const pseudonym3 = '000CU0WP';
         const pseudonym4 = 'Hello!';
+        const pseudonym5 = '0007W0W9';
 
-        const pseudonyms = [pseudonym0, pseudonym1, pseudonym2, pseudonym3, pseudonym4];
+        const pseudonyms = [pseudonym0, pseudonym1, pseudonym2, pseudonym3, pseudonym4, pseudonym5];
 
         const { depseudonymized, invalid } = await pseudonymizationService.depseudonymize(pseudonyms);
 
-        assert.strictEqual(depseudonymized.size, 1, "Check amount of depseudonymized");
-        assert.true(depseudonymized.has(pseudonym1), "Check if pseudonym got depseudonymized");
+        assert.strictEqual(depseudonymized.size, 2, "Check amount of depseudonymized");
+        assert.true(depseudonymized.has(pseudonym1), "Check if H0N587RL got depseudonymized");
+        assert.true(depseudonymized.has(pseudonym5), "Check if 0007W0W9 got depseudonymized");
 
         const idat = depseudonymized.get(pseudonym1);
 
         assert.strictEqual(idat.firstname, firstname, "Compare firstname");
         assert.strictEqual(idat.lastname, lastname, "Compare lastname");
         assert.strictEqual(idat.birthday.getTime(), birthday.getTime(), "Compare birthday");
-
 
         assert.strictEqual(invalid.length, 2, "Check amount of invalid pseudonyms");
         assert.true(invalid.includes(pseudonym0), "Check if pseudonym is invalid: " + pseudonym0);
