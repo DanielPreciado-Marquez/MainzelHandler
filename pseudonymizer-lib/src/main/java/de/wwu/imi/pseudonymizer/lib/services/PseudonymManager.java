@@ -25,7 +25,13 @@ public class PseudonymManager {
 		final JSONObject jsonData = new JSONObject(requestBody);
 
 		final String token = jsonData.getString("tokenId");
-		final String pseudonym = jsonData.getString("id");
+		final String pseudonym;
+		
+		if (jsonData.has("id")) {
+			pseudonym = jsonData.getString("id");
+		} else {
+			pseudonym = jsonData.getJSONArray("ids").getJSONObject(0).getString("idString");
+		}
 
 		return putPseudonym(token, pseudonym);
 	}

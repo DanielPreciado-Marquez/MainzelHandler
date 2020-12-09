@@ -4,8 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -26,12 +27,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import de.wwu.imi.pseudonymizer.lib.exceptions.MainzellisteConnectionException;
 import de.wwu.imi.pseudonymizer.lib.exceptions.MainzellisteException;
-import de.wwu.imi.pseudonymizer.lib.model.DepseudonymizationResponse;
+import de.wwu.imi.pseudonymizer.lib.model.DepseudonymizationUrlResponse;
 import de.wwu.imi.pseudonymizer.lib.model.Patient;
+import de.wwu.imi.pseudonymizer.lib.model.PseudonymizationUrlResponse;
 import de.wwu.imi.pseudonymizer.lib.services.PseudonymManager;
 
 /**
@@ -61,8 +62,14 @@ public abstract class AbstractPseudonymizationController {
 	/**
 	 * API-Key for the Mainzelliste.
 	 */
-	@Value("${pseudonym-handler.mainzelliste.apikey}")
+	@Value("${pseudonym-handler.mainzelliste.api.key}")
 	private String mainzellisteApiKey;
+	
+	/**
+	 * Version of the Mainzelliste api.
+	 */
+	@Value("${pseudonym-handler.mainzelliste.api.version:3.0}")
+	private String mainzellisteApiVersion;
 
 	/**
 	 * Server port.
@@ -88,6 +95,12 @@ public abstract class AbstractPseudonymizationController {
 	@Value("${pseudonym-handler.url}")
 	private String serverUrl;
 
+	/**
+	 * Determines if the callback function of the mainzelliste should be used.
+	 */
+	@Value("${pseudonym-handler.useCallback:true}")
+	private boolean useCallback;
+
 	@Autowired
 	PseudonymManager pseudonymManager;
 
@@ -95,27 +108,23 @@ public abstract class AbstractPseudonymizationController {
 	 * Handles the tokening with the Mainzelliste and returns an Array of urls
 	 * containing the token.
 	 *
-	 * @param amount      Amount of requested addPatient token.
-	 * @param useCallback Indicates if the callback function of the mainzelliste
-	 *                    should be used.
-	 * @return Array of urls for pseudonymizations.
+	 * @param amount Amount of requested addPatient token.
+	 * @return PseudonymizationUrlResponse containing the array of urls for pseudonymizations and the value of useCallback.
 	 */
 	@PostMapping("/tokens/addPatient")
-	public final String[] getPseudonymizationURL(@RequestBody final int amount,
-			@RequestParam(value = "useCallback", defaultValue = "false") final boolean useCallback) {
-		LOGGER.info("Requesting " + amount + " 'addPatient' tokens with useCallback=" + useCallback);
+	public final PseudonymizationUrlResponse getPseudonymizationUrl(@RequestBody final int amount) {
+		LOGGER.info("Requesting " + amount + " 'addPatient' tokens");
 
 		HttpClient httpClient = HttpClientBuilder.create().build();
-		String sessionURL = getSessionURL(httpClient);
+		String sessionURL = getSessionUrl(httpClient);
 
 		final String[] urlTokens = new String[amount];
 		for (int i = 0; i < amount; i++) {
-			urlTokens[i] = mainzellisteUrl + "patients?tokenId="
-					+ getAddPatientToken(sessionURL, httpClient, useCallback);
+			urlTokens[i] = mainzellisteUrl + "patients?tokenId=" + getAddPatientToken(sessionURL, httpClient);
 		}
 
 		LOGGER.info("Tokens created: " + urlTokens.length);
-		return urlTokens;
+		return new PseudonymizationUrlResponse(useCallback, urlTokens);
 	}
 
 	/**
@@ -129,12 +138,12 @@ public abstract class AbstractPseudonymizationController {
 	 *         pseudonyms.
 	 */
 	@PostMapping("/tokens/readPatients")
-	public final DepseudonymizationResponse getDepseudonymizationURL(@RequestBody final List<String> pseudonyms) {
+	public final DepseudonymizationUrlResponse getDepseudonymizationUrl(@RequestBody final List<String> pseudonyms) {
 		LOGGER.info("Requesting 'readPatients' token for " + pseudonyms.size() + " pseudonyms");
 
 		HttpClient httpClient = HttpClientBuilder.create().build();
 
-		String sessionURL = getSessionURL(httpClient);
+		String sessionURL = getSessionUrl(httpClient);
 
 		final ImmutablePair<String, List<String>> result = getReadPatientsToken(sessionURL, httpClient, pseudonyms);
 		final String token = result.getLeft();
@@ -142,20 +151,17 @@ public abstract class AbstractPseudonymizationController {
 
 		final String urlToken = (token != null) ? mainzellisteUrl + "patients?tokenId=" + token : "";
 
-		return new DepseudonymizationResponse(urlToken, invalidpseudonyms);
+		return new DepseudonymizationUrlResponse(urlToken, invalidpseudonyms);
 	}
 
 	/**
 	 * Accepts a list of patients to be handled by the application.
 	 *
-	 * @param patients    List of patients.
-	 * @param useCallback Indicates if the callback function of the mainzelliste
-	 *                    should be used.
+	 * @param patients List of patients.
 	 */
 	@PostMapping("/patients/send/mdat")
-	public final List<Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients,
-			@RequestParam(value = "useCallback", defaultValue = "false") final boolean useCallback) {
-		LOGGER.info("Recieved " + patients.size() + "patients with useCallback=" + useCallback);
+	public final List<Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients) {
+		LOGGER.info("Recieved " + patients.size() + " patients");
 
 		if (useCallback) {
 			for (final Patient patient : patients) {
@@ -191,26 +197,39 @@ public abstract class AbstractPseudonymizationController {
 	 * @return List of mdat.
 	 */
 	@PostMapping("/patients/request")
-	public final List<String> requestPatientsRequest(@RequestBody List<String> ids,
-			@RequestParam(value = "useCallback", defaultValue = "false") final boolean useCallback) {
+	public final Map<String, String> requestPatientsRequest(@RequestBody List<String> ids) {
 
-		LOGGER.debug("Requesting " + ids.size() + " patients with useCallback=" + useCallback);
+		LOGGER.debug("Requesting " + ids.size() + " patients");
+
+		final Map<String, String> mdat = new HashMap<String, String>();
 
 		if (useCallback) {
-			final List<String> pseudonyms = new ArrayList<String>();
+			// ids are token
+			final Map<String, String> pseudonyms = new HashMap<String, String>();
+			
 			for (final String token : ids) {
 				if (pseudonymManager.containsToken(token)) {
-					pseudonyms.add(pseudonymManager.removeToken(token));
+					pseudonyms.put(pseudonymManager.removeToken(token), token);
 				} else {
 					LOGGER.debug("No corresponding pseudonym found for token: " + token);
 				}
 			}
-			ids = pseudonyms;
+			
+			final List<Patient> patients = requestPatients(new ArrayList<String>(pseudonyms.keySet()));
+			
+			for	(final Patient patient : patients) {
+				mdat.put(pseudonyms.get(patient.getPseudonym()), patient.getMdatString());
+			}
+
+		} else {
+			// ids are pseudonyms
+			final List<Patient> patients = requestPatients(ids);
+			
+			for	(final Patient patient : patients) {
+				mdat.put(patient.getPseudonym(), patient.getMdatString());
+			}
 		}
 
-		final List<Patient> patients = requestPatients(ids);
-		final List<String> mdat = patients.stream().map(patient -> patient.getMdatString())
-				.collect(Collectors.toList());
 		return mdat;
 	}
 
@@ -244,13 +263,14 @@ public abstract class AbstractPseudonymizationController {
 	 * @return The session url with a valid session token from the pseudonymization
 	 *         server.
 	 */
-	private final String getSessionURL(final HttpClient httpClient) {
-		LOGGER.debug("Creating new session url");
+	private final String getSessionUrl(final HttpClient httpClient) {
+		LOGGER.debug("Requesting new session url");
 
 		final String connectionUrl = mainzellisteUrl + "sessions/";
 
 		final HttpPost request = new HttpPost(connectionUrl);
 		request.addHeader("mainzellisteApiKey", mainzellisteApiKey);
+		request.addHeader("mainzellisteApiVersion", mainzellisteApiVersion);
 
 		JSONObject jsonResponse;
 
@@ -279,8 +299,7 @@ public abstract class AbstractPseudonymizationController {
 	 * @param httpClient A HTTP-Client for the connection.
 	 * @return The query token from the pseudonymization server.
 	 */
-	private final String getAddPatientToken(final String sessionUrl, final HttpClient httpClient,
-			final boolean useCallback) {
+	private final String getAddPatientToken(final String sessionUrl, final HttpClient httpClient) {
 		final JSONObject body = new JSONObject();
 		final JSONObject data = new JSONObject();
 
@@ -377,6 +396,7 @@ public abstract class AbstractPseudonymizationController {
 		final HttpPost request = new HttpPost(connectionUrl);
 		request.addHeader("content-type", "application/json");
 		request.addHeader("mainzellisteApiKey", mainzellisteApiKey);
+		request.addHeader("mainzellisteApiVersion", mainzellisteApiVersion);
 
 		LOGGER.debug("Token request: " + body.toString());
 		request.setEntity(new StringEntity(body.toString(), ContentType.APPLICATION_JSON));
@@ -396,13 +416,21 @@ public abstract class AbstractPseudonymizationController {
 				throw new MainzellisteException("Error occured at Mainzelliste: " + response);
 			}
 
+			LOGGER.debug("Recieved token: " + response);
 			jsonResponse = new JSONObject(response);
 		} catch (IOException exception) {
 			LOGGER.error("Error while connecting to Mainzelliste: " + exception.getLocalizedMessage(), exception);
 			throw new MainzellisteConnectionException(exception.getLocalizedMessage(), exception);
 		}
 
-		final String tokenId = jsonResponse.getString("tokenId");
+		final String tokenId;
+		
+		if (mainzellisteApiVersion == "1.0") {
+			tokenId = jsonResponse.getString("tokenId");
+		} else {
+			tokenId = jsonResponse.getString("id");
+		}
+
 		LOGGER.debug("Token created: " + tokenId);
 
 		return tokenId;

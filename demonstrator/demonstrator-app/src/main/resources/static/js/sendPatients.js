@@ -8,7 +8,7 @@ var nextKey = 0;
 var pseudonymizationService;
 
 window.onload = function () {
-    pseudonymizationService = new PseudonymizationService(contextPath + requestPath, true);
+    pseudonymizationService = new PseudonymizationService(contextPath + requestPath);
 
     updateList();
 

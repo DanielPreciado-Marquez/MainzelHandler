@@ -69,10 +69,10 @@ const PatientStatus = Object.freeze({
  * This module is used to connect to the configured Pseudonymization service.
  * TODO: Maybe change patient into a class to prevent manuel changing the properties
  * @param {string} serverURL - URL of the MDAT server.
- * @param {boolean} [useCallback=false] - Indicates if the callback function of the Mainzelliste should be used. (WIP)
+ * @param {string} [mainzellisteApiVersion=3.0] - Version of the Mainzelliste api to be used.
  */
-function PseudonymizationService(serverURL, useCallback) {
-    useCallback = useCallback ?? false;
+function PseudonymizationService(serverURL, mainzellisteApiVersion) {
+    mainzellisteApiVersion = mainzellisteApiVersion ?? "3.0";
 
     const service = {};
 
@@ -363,7 +363,7 @@ function PseudonymizationService(serverURL, useCallback) {
             });
         }
 
-        const requestURL = serverURL + "/patients/send/mdat" + "?useCallback=" + useCallback;
+        const requestURL = serverURL + "/patients/send/mdat";
 
         const options = {
             method: 'POST',
@@ -407,7 +407,7 @@ function PseudonymizationService(serverURL, useCallback) {
             dataArray.push(patients.get(patientIds[i]).pseudonym);
         }
 
-        const requestURL = serverURL + "/patients/request" + "?useCallback=" + useCallback;
+        const requestURL = serverURL + "/patients/request";
 
         const options = {
             method: 'POST',
@@ -427,11 +427,12 @@ function PseudonymizationService(serverURL, useCallback) {
 
         const mdatArray = await response.json();
 
-        for (let i = 0; i < mdatArray.length; i++) {
+        for (let i = 0; i < patientIds.length; ++i) {
             const patient = patients.get(patientIds[i]);
-            const mdatString = mdatArray[i];
+            const pseudonym = patient.pseudonym;
+            const mdatString = mdatArray[pseudonym];
 
-            if (mdatString === "") {
+            if (typeof mdatString === 'undefined') {
                 patient.status = PatientStatus.NOT_FOUND;
             } else {
                 patient.mdat = JSON.parse(mdatString);
@@ -454,12 +455,12 @@ function PseudonymizationService(serverURL, useCallback) {
         const conflicts = [];
 
         if (patientIds.length !== 0) {
-            const urlArray = await getPseudonymizationURL(patientIds.length);
+            const response = await getPseudonymizationURL(patientIds.length);
 
             for (let i = 0; i < patientIds.length; ++i) {
                 const key = patientIds[i];
                 const patient = patients.get(key);
-                const success = await getPseudonym(urlArray[i], patient);
+                const success = await getPseudonym(response.urlTokens[i], patient, response.useCallback);
 
                 if (success) {
                     pseudonymized.push(key);
@@ -516,11 +517,11 @@ function PseudonymizationService(serverURL, useCallback) {
      * One url contains one token and can be used for the pseudonymization of one patient.
      * The URL gets invalid after some time specified in the Mainzelliste configuration.
      * @param {number} amount - Amount of requested pseudonymization urls.
-     * @returns {Promise<string[]>} Array containing the urls.
+     * @returns {Promise<{useCallback: boolean; urlTokens: string[];}>} Array containing the urls.
      * @throws Throws an exception if the server is not available.
      */
     async function getPseudonymizationURL(amount) {
-        const requestURL = serverURL + "/tokens/addPatient" + "?useCallback=" + useCallback;
+        const requestURL = serverURL + "/tokens/addPatient";
 
         const options = {
             method: 'POST',
@@ -529,8 +530,6 @@ function PseudonymizationService(serverURL, useCallback) {
             },
             body: amount
         };
-
-        console.log(options);
 
         const response = await fetch(requestURL, options);
 
@@ -582,10 +581,11 @@ function PseudonymizationService(serverURL, useCallback) {
      * If a conflict with the IDAT occurs, the tokenURL will be set.
      * @param {string} requestURL - URL for the pseudonymization.
      * @param {Patient} patient - Patient to get pseudonymized.
+     * @param {boolean} useCallback - Indicates if the callback function of the Mainzelliste will be used.
      * @returns {Promise<boolean>} Returns whether the pseudonymization was successful or not.
      * @throws Throws an exception if the Mainzelliste is not available.
      */
-    async function getPseudonym(requestURL, patient) {
+    async function getPseudonym(requestURL, patient, useCallback) {
 
         // This is important!
         // --------------------
@@ -613,7 +613,8 @@ function PseudonymizationService(serverURL, useCallback) {
         const options = {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'mainzellisteApiVersion': mainzellisteApiVersion
             },
             body: requestBody
         };
@@ -626,7 +627,9 @@ function PseudonymizationService(serverURL, useCallback) {
         switch (response.status) {
             case 201:
                 const responseBody = await response.json();
-                patient.pseudonym = (useCallback) ? requestURL.split("=")[1] : responseBody.newId
+                patient.pseudonym = (useCallback) ? requestURL.split("=")[1]
+                    : (mainzellisteApiVersion === "1.0") ? responseBody.newId
+                        : responseBody[0].idString
                 patient.status = PatientStatus.PSEUDONYMIZED;
                 patient.tokenURL = null;
                 break;
@@ -666,7 +669,15 @@ function PseudonymizationService(serverURL, useCallback) {
      * @throws Throws an exception if the Mainzelliste is not available.
      */
     async function getPatientData(requestURL) {
-        const response = await fetch(requestURL);
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'mainzellisteApiVersion': mainzellisteApiVersion
+            },
+        };
+
+        const response = await fetch(requestURL, options);
 
         if (typeof response === 'undefined')
             throw new Error("Can't connect to Mainzelliste!");

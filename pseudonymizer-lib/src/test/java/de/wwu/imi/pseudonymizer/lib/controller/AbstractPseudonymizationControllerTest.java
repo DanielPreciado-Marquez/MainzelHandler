@@ -12,7 +12,8 @@ import org.mockito.Mockito;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import de.wwu.imi.pseudonymizer.lib.model.DepseudonymizationResponse;
+import de.wwu.imi.pseudonymizer.lib.model.DepseudonymizationUrlResponse;
+import de.wwu.imi.pseudonymizer.lib.model.PseudonymizationUrlResponse;
 
 @ExtendWith(SpringExtension.class)
 class AbstractPseudonymizationControllerTest {
@@ -22,18 +23,24 @@ class AbstractPseudonymizationControllerTest {
 
 	private static final String mainzellisteUrl = "http://localhost:8080/";
 	private static final String mainzellisteApiKey = "123BachelorArbeit321";
+	private static final String mainzellisteApiVersion = "3.0";
+	private static final boolean useCallback = false;
 
 	@BeforeAll
 	public static void setUp() {
 		ReflectionTestUtils.setField(controller, "mainzellisteUrl", mainzellisteUrl);
 		ReflectionTestUtils.setField(controller, "mainzellisteApiKey", mainzellisteApiKey);
+		ReflectionTestUtils.setField(controller, "mainzellisteApiVersion", mainzellisteApiVersion);
+		ReflectionTestUtils.setField(controller, "useCallback", useCallback);
 	}
 
 	@Test
 	void getAddPatientTokenTest() {
 		final int urlLength = mainzellisteUrl.length();
 
-		final String[] result = controller.getPseudonymizationURL(1, false);
+		final PseudonymizationUrlResponse response = controller.getPseudonymizationUrl(1);
+		
+		final String[] result = response.getUrlTokens();
 		assertEquals(1, result.length);
 
 		final String tokenUrl = result[0];
@@ -51,7 +58,8 @@ class AbstractPseudonymizationControllerTest {
 	void get10000AddPatientTokensTest() {
 		final int urlLength = mainzellisteUrl.length();
 
-		final String[] result = controller.getPseudonymizationURL(10000, false);
+		final PseudonymizationUrlResponse response = controller.getPseudonymizationUrl(10000);
+		final String[] result = response.getUrlTokens();
 		assertEquals(10000, result.length);
 
 		for (final String tokenUrl : result) {
@@ -73,7 +81,7 @@ class AbstractPseudonymizationControllerTest {
 		pseudonyms.add(pseudonym1);
 		pseudonyms.add(pseudonym2);
 
-		final DepseudonymizationResponse resopnse = controller.getDepseudonymizationURL(pseudonyms);
+		final DepseudonymizationUrlResponse resopnse = controller.getDepseudonymizationUrl(pseudonyms);
 		final String tokenUrl = resopnse.getUrl();
 		final List<String> invalidPseudonyms = resopnse.getInvalidPseudonyms();
 
@@ -93,7 +101,7 @@ class AbstractPseudonymizationControllerTest {
 
 		pseudonyms.add(pseudonym);
 
-		final DepseudonymizationResponse resopnse = controller.getDepseudonymizationURL(pseudonyms);
+		final DepseudonymizationUrlResponse resopnse = controller.getDepseudonymizationUrl(pseudonyms);
 		final String url = resopnse.getUrl();
 		final List<String> invalidPseudonyms = resopnse.getInvalidPseudonyms();
 

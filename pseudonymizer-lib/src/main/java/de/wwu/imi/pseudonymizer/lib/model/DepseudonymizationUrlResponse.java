@@ -10,13 +10,13 @@ import de.wwu.imi.pseudonymizer.lib.controller.AbstractPseudonymizationControlle
  * Contains the depseudonymization URL and a list of the invalid pseudonyms from
  * the corresponding request.
  */
-public class DepseudonymizationResponse {
+public class DepseudonymizationUrlResponse {
 
 	private String url;
 
 	private List<String> invalidPseudonyms;
 
-	public DepseudonymizationResponse(final String psedonymizationUrl, final List<String> invlaidPseudonyms) {
+	public DepseudonymizationUrlResponse(final String psedonymizationUrl, final List<String> invlaidPseudonyms) {
 		this.url = psedonymizationUrl;
 		this.invalidPseudonyms = invlaidPseudonyms;
 	}
