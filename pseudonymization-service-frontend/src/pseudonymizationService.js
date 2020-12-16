@@ -28,9 +28,16 @@
  */
 
 /**
- * Id identifying a patient. Any type is allowed.
+ * Key identifying a patient. Any type is allowed.
  * Only used in client side.
- * @typedef {*} patientId
+ * @typedef {*} patientKey
+ */
+
+/**
+ * Object returned by the mainzelliste after a depseudonymization request.
+ * @typedef {Object} DepseudonymizationResponse
+ * @property {{vorname: string; nachname: string; geburtstag: string, geburtsmonat: string; geburtsjahr: string;}} fields
+ * @property {[{idType: string; idString: string; tentative: boolean}]} ids
  */
 
 /**
@@ -40,7 +47,8 @@
  * -1: The IDAT is invalid. This should be prevented by createIDAT.
  * 0: The patient got successful created and has valid IDAT.
  * 1: The pseudonym has benn created.
- * 11: The storing the MDAT was successful.
+ * 11: The server processed the MDAT was successfully.
+ * 12: The server did not processed the MDAT was successfully.
  * 21: Patient was successfully found in the database.
  * 22: There is no patient with the given IDAT.
  * @typedef {number} PatientStatus
@@ -51,9 +59,8 @@ const PatientStatus = Object.freeze({
     IDAT_INVALID: -1,
     CREATED: 0,
     PSEUDONYMIZED: 1,
-    // TODO rename e.g 'SEND', 'HANDLED'
-    SAVED: 11,
-    // TODO: Conflict with send data? e.g. 'NOT_SEND', 'NOT_HANDLED'
+    PROCESSED: 11,
+    NOT_PROCESSED: 12,
     FOUND: 21,
     NOT_FOUND: 22,
 });
@@ -61,8 +68,13 @@ const PatientStatus = Object.freeze({
 /**
  * This module is used to connect to the configured Pseudonymization service.
  * TODO: Maybe change patient into a class to prevent manuel changing the properties
+ * @param {string} serverURL - URL of the MDAT server.
+ * @param {string} [mainzellisteApiVersion=3.0] - Version of the Mainzelliste api to be used.
  */
-function PseudonymizationService(serverURL) {
+function PseudonymizationService(serverURL, mainzellisteApiVersion) {
+    mainzellisteApiVersion = mainzellisteApiVersion ?? "3.0";
+
+    const service = {};
 
     /**
      * Creates a new Patient.
@@ -74,7 +86,7 @@ function PseudonymizationService(serverURL) {
      * @returns {Patient} - The patient.
      * @throws Throws an exception if the IDAT is not valid.
      */
-    this.createPatient = function (firstname, lastname, birthday, mdat) {
+    service.createPatient = function (firstname, lastname, birthday, mdat) {
 
         const idat = this.createIDAT(firstname, lastname, birthday);
 
@@ -103,7 +115,7 @@ function PseudonymizationService(serverURL) {
      * @param {string | number | Date} birthday - Birthday of the patient.
      * @throws Throws an exception if the IDAT is not valid.
      */
-   this.updateIDAT = function (patient, firstname, lastname, birthday) {
+    service.updateIDAT = function (patient, firstname, lastname, birthday) {
 
         const idat = this.createIDAT(firstname, lastname, birthday);
 
@@ -136,7 +148,7 @@ function PseudonymizationService(serverURL) {
      * @returns {IDAT} - Validated IDAT.
      * @throws Throws an exception if the IDAT is not valid.
      */
-    this.createIDAT = function (firstname, lastname, birthday) {
+    service.createIDAT = function (firstname, lastname, birthday) {
 
         if (typeof firstname !== "string" || firstname.trim() === "")
             throw new Error("Invalid firstname!");
@@ -167,7 +179,7 @@ function PseudonymizationService(serverURL) {
      * @param {Patient} patient - Patient to be updated.
      * @param {Object} [mdat={}] - MDAT of the Patient. For now, every Object is valid. Default is an empty object.
      */
-    this.updateMDAT = function (patient, mdat) {
+    service.updateMDAT = function (patient, mdat) {
         mdat = mdat ?? {};
         patient.mdat = mdat;
 
@@ -177,20 +189,20 @@ function PseudonymizationService(serverURL) {
 
     /**
      * Searches patients with the given status.
-     * @param {Map<patientId, Patient>} patients - Map with the patients.
+     * @param {Map<patientKey, Patient>} patients - Map with the patients.
      * @param {PatientStatus | PatientStatus[]} patientStatus - Status of the patients to be selected.
-     * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be considered.
-     * @returns {patientId[]} - Ids of th found patients.
+     * @param {patientKey[]} [patientKeys] - Array of patientKeys of the patients to be considered.
+     * @returns {patientKey[]} - Ids of th found patients.
      */
-    this.getPatients = function (patients, patientStatus, patientIds) {
+    service.getPatients = function (patients, patientStatus, patientKeys) {
         if (!Array.isArray(patientStatus))
             patientStatus = [patientStatus];
 
-        patientIds = patientIds ?? Array.from(patients.keys());
+            patientKeys = patientKeys ?? Array.from(patients.keys());
 
         const result = [];
 
-        for (const key of patientIds)
+        for (const key of patientKeys)
             if (patientStatus.includes(patients.get(key).status))
                 result.push(key);
 
@@ -199,55 +211,72 @@ function PseudonymizationService(serverURL) {
 
     /**
      * Stores the given patients.
-     * @param {Map<patientId, Patient>} patients - Map with the patients.
-     * @param {patientId[]} [patientIds=Array.from(patients.keys())] - Array of patientIds of the patients to be stored.
-     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, SAVED should be send again.
+     * @param {Map<patientKey, Patient>} patients - Map with the patients.
+     * @param {patientKey[]} [patientKeys=Array.from(patients.keys())] - Array of patientKeys of the patients to be stored.
+     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be send again.
      * @throws Throws an exception if the pseudonymization server is not available.
      * @throws Throws an exception if the database is not available.
      */
-    this.sendPatients = async function (patients, patientIds, retrySucceeded) {
-        patientIds = patientIds ?? Array.from(patients.keys());
+    service.sendPatients = async function (patients, patientKeys, retrySucceeded) {
+        patientKeys = patientKeys ?? Array.from(patients.keys());
         retrySucceeded = retrySucceeded ?? false;
 
-        const pseudonymizedIds = await handlePseudonymization(patients, patientIds, retrySucceeded);
+        const pseudonymizedIds = await handlePseudonymization(patients, patientKeys, retrySucceeded);
         await send(patients, pseudonymizedIds);
     }
 
     /**
      * Requests the MDAT of the given patients.
-     * @param {Map<patientId, Patient>} patients - Map with the patients.
-     * @param {patientId[]} [patientIds=Array.from(patients.keys())] - Array of patientIds of the patients to be searched.
-     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, SAVED should be requested again.
-     * @throws Throws an exception if the pseudonymization server is not available.
+     * @param {Map<patientKey, Patient>} patients - Map with the patients.
+     * @param {patientKey[]} [patientKeys=Array.from(patients.keys())] - Array of patientKeys of the patients to be searched.
+     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be requested again.
+     * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
-    this.requestPatients = async function (patients, patientIds, retrySucceeded) {
-        patientIds = patientIds ?? Array.from(patients.keys());
+    service.requestPatients = async function (patients, patientKeys, retrySucceeded) {
+        patientKeys = patientKeys ?? Array.from(patients.keys());
         retrySucceeded = retrySucceeded ?? false;
 
-        const pseudonymizedIds = await handlePseudonymization(patients, patientIds, retrySucceeded);
+        const pseudonymizedIds = await handlePseudonymization(patients, patientKeys, retrySucceeded);
         await request(patients, pseudonymizedIds);
     }
 
     /**
+     * Depseudonymizes pseudonyms.
+     * Returns a map containing the pseudonyms with the corresponding IDAT and an array containing all the pseudonyms without an IDAT.
+     * @param {string | string[]} pseudonyms - Pseudonyms to depseudonymize.
+     * @returns {Promise<{depseudonymized: Map<string, IDAT>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
+     * @throws Throws an exception if the Mainzelliste is not available.
+     * @throws Throws an exception if the server is not available.
+     */
+    service.depseudonymize = async function (pseudonyms) {
+        if (!Array.isArray(pseudonyms))
+            pseudonyms = [pseudonyms];
+
+        const { depseudonymized, invalid } = await handleDepseudonymization(pseudonyms);
+        return { depseudonymized, invalid };
+    }
+
+    /**
      * Handles the pseudonymization of the given Patients.
-     * If patientIds is null, every patient in the map will be handled.
+     * If patientKeys is null, every patient in the map will be handled.
      * Patients with status CREATED will be pseudonymized with createPseudonyms.
      * Patients with status CONFLICT will be pseudonymized with resolveConflicts.
      * Patients with status PSEUDONYMIZED be passed through.
      * Every other status will be ignored.
-     * @param {Map<patientId, Patient>} patients - Map with the patients.
-     * @param {patientId[]} patientIds - Array of patientIds of the patients to get pseudonymized.
-     * @param {boolean} includeSucceeded - Indicates if patients with status FOUND, NOT_FOUND, SAVED should included.
-     * @returns {Promise<patientId[]>} - Array with the patientIds of successful pseudonymized patients.
-     * @throws Throws an exception if the pseudonymization server is not available.
+     * @param {Map<patientKey, Patient>} patients - Map with the patients.
+     * @param {patientKey[]} patientKeys - Array of patientKeys of the patients to get pseudonymized.
+     * @param {boolean} includeSucceeded - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should included.
+     * @returns {Promise<patientKey[]>} - Array with the patientKeys of successful pseudonymized patients.
+     * @throws Throws an exception if the Mainzelliste is not available.
+     * @throws Throws an exception if the server is not available.
      */
-    async function handlePseudonymization(patients, patientIds, includeSucceeded) {
+    async function handlePseudonymization(patients, patientKeys, includeSucceeded) {
         const created = [];
         const conflicts = [];
         let pseudonymized = [];
 
-        for (const key of patientIds) {
+        for (const key of patientKeys) {
             const patient = patients.get(key);
 
             switch (patient.status) {
@@ -265,9 +294,10 @@ function PseudonymizationService(serverURL) {
                     pseudonymized.push(key);
                     break;
 
+                case PatientStatus.PROCESSED:
+                case PatientStatus.NOT_PROCESSED:
                 case PatientStatus.FOUND:
                 case PatientStatus.NOT_FOUND:
-                case PatientStatus.SAVED:
                     if (includeSucceeded)
                         pseudonymized.push(key);
                     break;
@@ -284,21 +314,48 @@ function PseudonymizationService(serverURL) {
     }
 
     /**
-     * Sends patients to the server.
-     * The patients must have a pseudonym.
-     * TODO: give response if the patient got send successfully.
-     * TODO: Dynamic error message from the server
-     * @param {Map<patientId, Patient>} patients - Map with patients.
-     * @param {patientId[]} patientIds - Array of patientIds of the patients to be send.
+     * Depseudonymizes the given pseudonyms
+     * @param {string[]} pseudonyms - Pseudonyms to get depseudonymized.
+     * @returns {Promise<{depseudonymized: Map<string, IDAT>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
+     * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
-    async function send(patients, patientIds) {
-        if (patientIds.length === 0) return;
+    async function handleDepseudonymization(pseudonyms) {
+        const depseudonymized = new Map();
+
+        if (pseudonyms.length === 0)
+            return { depseudonymized, invalid: [] };
+
+        const { url, invalidPseudonyms } = await getDepseudonymizationURL(pseudonyms);
+
+        if (url === "")
+            return { depseudonymized, invalid: invalidPseudonyms };
+
+        const responseArray = await getPatientData(url);
+
+        for (const entry of responseArray) {
+            const pseudonym = entry.ids[0].idString;
+            const idat = service.createIDAT(entry.fields.vorname, entry.fields.nachname, entry.fields.geburtsjahr + "-" + entry.fields.geburtsmonat + "-" + entry.fields.geburtstag);
+            depseudonymized.set(pseudonym, idat);
+        }
+
+        return { depseudonymized, invalid: invalidPseudonyms };
+    }
+
+    /**
+     * Sends patients to the server.
+     * The patients must have a pseudonym.
+     * @param {Map<patientKey, Patient>} patients - Map with patients.
+     * @param {patientKey[]} patientKeys - Array of patientKeys of the patients to be send.
+     * @throws Throws an exception if the server is not available.
+     */
+    async function send(patients, patientKeys) {
+        if (patientKeys.length === 0) return;
 
         const dataArray = [];
 
-        for (let i = 0; i < patientIds.length; ++i) {
-            const patient = patients.get(patientIds[i]);
+        for (const key of patientKeys) {
+            const patient = patients.get(key);
 
             dataArray.push({
                 pseudonym: patient.pseudonym,
@@ -306,7 +363,7 @@ function PseudonymizationService(serverURL) {
             });
         }
 
-        const requestURL = serverURL + "api/patients/send";
+        const requestURL = serverURL + "/patients/send/mdat";
 
         const options = {
             method: 'POST',
@@ -318,35 +375,37 @@ function PseudonymizationService(serverURL) {
 
         const response = await fetch(requestURL, options);
 
-        // TODO Throw different error for second condition
-        if (typeof response === 'undefined' || !response.ok)
+        if (typeof response === 'undefined')
             throw new Error("Server not available");
 
-        // TODO: is a response form the server necessary?
-        for (const key of patientIds) {
-            const patient = patients.get(key);
-            patient.status = PatientStatus.SAVED;
+        if (!response.ok)
+            throw new Error(await response.text());
+
+        const successArray = await response.json();
+
+        for (let i = 0; i < patientKeys.length; i++) {
+            const patient = patients.get(patientKeys[i]);
+            patient.status = successArray[patient.pseudonym] ? PatientStatus.PROCESSED : PatientStatus.NOT_PROCESSED;
         }
     }
 
     /**
      * Requests patients from the server and sets the mdat.
      * The patients must have a pseudonym.
-     * TODO: Dynamic error message from the server
-     * @param {Map<patientId, Patient>} patients - Map with patients.
-     * @param {patientId[]} patientIds - Array of patientIds of the patients to get searched.
+     * @param {Map<patientKey, Patient>} patients - Map with patients.
+     * @param {patientKey[]} patientKeys - Array of patientKeys of the patients to get searched.
      * @throws Throws an exception if the server is not available.
      */
-    async function request(patients, patientIds) {
-        if (patientIds.length === 0) return;
+    async function request(patients, patientKeys) {
+        if (patientKeys.length === 0) return;
 
         const dataArray = [];
 
-        for (let i = 0; i < patientIds.length; ++i) {
-            dataArray.push(patients.get(patientIds[i]).pseudonym);
+        for (let i = 0; i < patientKeys.length; ++i) {
+            dataArray.push(patients.get(patientKeys[i]).pseudonym);
         }
 
-        const requestURL = serverURL + "api/patients/request";
+        const requestURL = serverURL + "/patients/request";
 
         const options = {
             method: 'POST',
@@ -358,17 +417,19 @@ function PseudonymizationService(serverURL) {
 
         const response = await fetch(requestURL, options);
 
-        // TODO Throw different error for second condition
-        if (typeof response === 'undefined' || !response.ok)
+        if (typeof response === 'undefined')
             throw new Error("Server not available");
+
+        if (!response.ok)
+            throw new Error(await response.text());
 
         const mdatArray = await response.json();
 
-        for (let i = 0; i < mdatArray.length; i++) {
-            const patient = patients.get(patientIds[i]);
-            const mdatString = mdatArray[i];
+        for (let i = 0; i < patientKeys.length; ++i) {
+            const patient = patients.get(patientKeys[i]);
+            const mdatString = mdatArray[patient.pseudonym];
 
-            if (mdatString === "") {
+            if (typeof mdatString === 'undefined') {
                 patient.status = PatientStatus.NOT_FOUND;
             } else {
                 patient.mdat = JSON.parse(mdatString);
@@ -380,22 +441,23 @@ function PseudonymizationService(serverURL) {
     /**
      * Creates pseudonyms for the given patients.
      * The patients must have the status CREATED.
-     * @param {Map<patientId, Patient>} patients - Map with patients.
-     * @param {patientId[]} [patientIds] - PatientIds of the patients to get pseudonymized.
-     * @returns {Promise<{pseudonymized: patientId[]; conflicts: patientId[];}>}
-     * @throws Throws an exception if the pseudonymization server is not available.
+     * @param {Map<patientKey, Patient>} patients - Map with patients.
+     * @param {patientKey[]} [patientKeys] - PatientKeys of the patients to get pseudonymized.
+     * @returns {Promise<{pseudonymized: patientKey[]; conflicts: patientKey[];}>} Arrays of keys that got pseudonymized have a conflict.
+     * @throws Throws an exception if the Mainzelliste is not available.
+     * @throws Throws an exception if the server is not available.
      */
-    async function createPseudonyms(patients, patientIds) {
+    async function createPseudonyms(patients, patientKeys) {
         const pseudonymized = [];
         const conflicts = [];
 
-        if (patientIds.length !== 0) {
-            const urlArray = await getPseudonymizationURL(patientIds.length);
+        if (patientKeys.length !== 0) {
+            const response = await getPseudonymizationURL(patientKeys.length);
 
-            for (let i = 0; i < patientIds.length; ++i) {
-                const key = patientIds[i];
+            for (let i = 0; i < patientKeys.length; ++i) {
+                const key = patientKeys[i];
                 const patient = patients.get(key);
-                const success = await getPseudonym(urlArray[i], patient);
+                const success = await getPseudonym(response.urlTokens[i], patient, response.useCallback);
 
                 if (success) {
                     pseudonymized.push(key);
@@ -411,17 +473,18 @@ function PseudonymizationService(serverURL) {
     /**
      * Resolves conflicts of patients.
      * The patients must have a conflict.
-     * @param {Map<patientId, Patient>} patients - Map with patients.
-     * @param {patientId[]} patientIds - PatientIds of the patients with conflicts to resolve.
-     * @returns {Promise<{pseudonymized: patientId[]; conflicts: patientId[];}>} - PatientIds of the patients that got pseudonymized and that new conflicts
-     * @throws Throws an exception if the pseudonymization server is not available.
+     * @param {Map<patientKey, Patient>} patients - Map with patients.
+     * @param {patientKey[]} patientKeys - PatientKeys of the patients with conflicts to resolve.
+     * @returns {Promise<{pseudonymized: patientKey[]; conflicts: patientKey[];}>} PatientKeys of the patients that got pseudonymized and that new conflicts
+     * @throws Throws an exception if the Mainzelliste is not available.
+     * @throws Throws an exception if the server is not available.
      */
-    async function resolveConflicts(patients, patientIds) {
+    async function resolveConflicts(patients, patientKeys) {
         let pseudonymized = [];
         let conflicts = [];
         const invalidTokens = [];
 
-        for (const key of patientIds) {
+        for (const key of patientKeys) {
             const patient = patients.get(key);
 
             if (patient.statusCode === PatientStatus.TOKEN_INVALID) {
@@ -451,15 +514,58 @@ function PseudonymizationService(serverURL) {
      * One url contains one token and can be used for the pseudonymization of one patient.
      * The URL gets invalid after some time specified in the Mainzelliste configuration.
      * @param {number} amount - Amount of requested pseudonymization urls.
-     * @returns {Promise<string[]>} - Array containing the urls.
-     * @throws Throws an exception if the pseudonymization server is not available.
+     * @returns {Promise<{useCallback: boolean; urlTokens: string[];}>} Array containing the urls.
+     * @throws Throws an exception if the server is not available.
      */
     async function getPseudonymizationURL(amount) {
-        const requestURL = serverURL + "api/tokens/addPatient/" + amount;
+        const requestURL = serverURL + "/tokens/addPatient";
 
-        const response = await fetch(requestURL);
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: amount
+        };
 
-        if (typeof response === 'undefined' || !response.ok)
+        const response = await fetch(requestURL, options);
+
+        if (typeof response === 'undefined')
+            throw new Error("Server not available");
+
+        if (!response.ok)
+            throw new Error(await response.text());
+
+        return await response.json();
+    }
+
+    /**
+     * Creates a depseudonymization url for the given pseudonyms.
+     * Can be used to request the IDAT of all givane and valid pseudonyms.
+     * Returns the url and a list containing all invalid pseudonyms
+     * that can't get depseudonymized with the returned url.
+     * Duplicated pseudonyms will be removed.
+     * @param {string[]} pseudonyms - Pseudonyms to depseudonymize.
+     * @returns {Promise<{url: string; invalidPseudonyms: string[];}>} URL for the depseudonymization and all invalid pseudonyms.
+     * @throws Throws an exception if the server is not available.
+     */
+    async function getDepseudonymizationURL(pseudonyms) {
+        const requestURL = serverURL + "/tokens/readPatients";
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(pseudonyms)
+        };
+
+        const response = await fetch(requestURL, options);
+
+        if (typeof response === 'undefined')
+            throw new Error("Server not available");
+
+        if (!response.ok)
             throw new Error(await response.text());
 
         return await response.json();
@@ -472,10 +578,11 @@ function PseudonymizationService(serverURL) {
      * If a conflict with the IDAT occurs, the tokenURL will be set.
      * @param {string} requestURL - URL for the pseudonymization.
      * @param {Patient} patient - Patient to get pseudonymized.
-     * @returns {Promise<boolean>} - Returns whether the pseudonymization was successful or not.
-     * @throws Throws an exception if the pseudonymization server is not available.
+     * @param {boolean} useCallback - Indicates if the callback function of the Mainzelliste will be used.
+     * @returns {Promise<boolean>} Returns whether the pseudonymization was successful or not.
+     * @throws Throws an exception if the Mainzelliste is not available.
      */
-    async function getPseudonym(requestURL, patient) {
+    async function getPseudonym(requestURL, patient, useCallback) {
 
         // This is important!
         // --------------------
@@ -503,7 +610,8 @@ function PseudonymizationService(serverURL) {
         const options = {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'mainzellisteApiVersion': mainzellisteApiVersion
             },
             body: requestBody
         };
@@ -516,7 +624,9 @@ function PseudonymizationService(serverURL) {
         switch (response.status) {
             case 201:
                 const responseBody = await response.json();
-                patient.pseudonym = responseBody.newId;
+                patient.pseudonym = (useCallback) ? requestURL.split("=")[1]
+                    : (mainzellisteApiVersion === "1.0") ? responseBody.newId
+                        : responseBody[0].idString
                 patient.status = PatientStatus.PSEUDONYMIZED;
                 patient.tokenURL = null;
                 break;
@@ -549,5 +659,31 @@ function PseudonymizationService(serverURL) {
         return (patient.status === PatientStatus.PSEUDONYMIZED);
     }
 
-    return this;
+    /**
+     * Requests the IDAT of the patients associated with the token contained in the requestURL.
+     * @param {string} requestURL - URL for the depseudonymization.
+     * @returns {Promise<DepseudonymizationResponse[]>} Response from the Mainzelliste.
+     * @throws Throws an exception if the Mainzelliste is not available.
+     */
+    async function getPatientData(requestURL) {
+
+        const options = {
+            method: 'GET',
+            headers: {
+                'mainzellisteApiVersion': mainzellisteApiVersion
+            },
+        };
+
+        const response = await fetch(requestURL, options);
+
+        if (typeof response === 'undefined')
+            throw new Error("Can't connect to Mainzelliste!");
+
+        if (!response.ok)
+            throw new Error(await response.text());
+
+        return await response.json();
+    }
+
+    return service;
 }
