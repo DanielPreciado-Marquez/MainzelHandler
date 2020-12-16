@@ -244,7 +244,7 @@ public abstract class AbstractPseudonymizationController {
 			final List<Patient> patients = requestPatients(new ArrayList<String>(pseudonyms.keySet()));
 
 			for (final Patient patient : patients) {
-				mdat.put(pseudonyms.get(patient.getPseudonym()), patient.getMdatString());
+				mdat.put(pseudonyms.get(patient.getPseudonym()), patient.getMdat());
 			}
 
 		} else {
@@ -252,7 +252,7 @@ public abstract class AbstractPseudonymizationController {
 			final List<Patient> patients = requestPatients(ids);
 
 			for (final Patient patient : patients) {
-				mdat.put(patient.getPseudonym(), patient.getMdatString());
+				mdat.put(patient.getPseudonym(), patient.getMdat());
 			}
 		}
 

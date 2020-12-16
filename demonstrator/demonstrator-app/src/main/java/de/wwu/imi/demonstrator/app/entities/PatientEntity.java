@@ -28,7 +28,7 @@ public class PatientEntity {
 
 	public PatientEntity(final Patient patient) {
 		this.pseudonym = patient.getPseudonym();
-		this.mdat = patient.getMdatString();
+		this.mdat = patient.getMdat();
 	}
 
 	public String getPseudonym() {

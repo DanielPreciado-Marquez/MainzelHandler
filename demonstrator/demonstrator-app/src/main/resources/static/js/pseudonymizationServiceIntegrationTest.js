@@ -70,7 +70,7 @@ QUnit.module('pseudonymization', () => {
         const patients = new Map();
         let mdat = {testProperty: 0};
 
-        const patient0 = pseudonymizationService.createPatient("Integration", "Test", "2020-10-20", mdat);
+        const patient0 = pseudonymizationService.createPatient("Integration", "Test", "2020-10-20", JSON.stringify(mdat));
         patients.set(0, patient0);
 
         await pseudonymizationService.sendPatients(patients, [0]);
@@ -81,16 +81,16 @@ QUnit.module('pseudonymization', () => {
         await pseudonymizationService.requestPatients(patients, [1]);
 
         assert.strictEqual(patient1.status, PatientStatus.FOUND, 'Compare status');
-        assert.deepEqual(patient1.mdat, mdat, 'Compare MDAT');
+        assert.deepEqual(JSON.parse(patient1.mdat), mdat, 'Compare MDAT');
 
         mdat = {testProperty: 1};
-        pseudonymizationService.updateMDAT(patient0, mdat);
+        pseudonymizationService.updateMDAT(patient0, JSON.stringify(mdat));
 
         await pseudonymizationService.sendPatients(patients, [0]);
         await pseudonymizationService.requestPatients(patients, [1], true);
 
         assert.strictEqual(patient1.status, PatientStatus.FOUND, 'Compare status');
-        assert.deepEqual(patient1.mdat, mdat, 'Compare MDAT');
+        assert.deepEqual(JSON.parse(patient1.mdat), mdat, 'Compare MDAT');
     });
 });
 

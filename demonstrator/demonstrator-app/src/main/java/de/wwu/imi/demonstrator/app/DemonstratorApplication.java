@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import de.wwu.imi.pseudonymizer.lib.PseudonymizationLibConfig;
 
-
 @SpringBootApplication
 @Import(PseudonymizationLibConfig.class)
 @EntityScan("de.wwu.imi.demonstrator.app.entities")

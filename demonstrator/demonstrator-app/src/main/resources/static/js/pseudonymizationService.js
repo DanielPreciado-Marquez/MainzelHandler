@@ -12,8 +12,9 @@
 /**
  * The MDAT of a patient.
  * Stores the medical data.
- * For now, every object with key - value pairs is valid.
- * @typedef {Object} MDAT
+ * This library stores the mdat as a raw string.
+ * The serverside and clientside applications can parse the mdat to a string and back to the desired type.
+ * @typedef {string} MDAT
  */
 
 /**
@@ -90,8 +91,8 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
         const idat = this.createIDAT(firstname, lastname, birthday);
 
-        mdat = mdat ?? {};
-        if (typeof mdat !== 'object' || Array.isArray(mdat))
+        mdat = mdat ?? "";
+        if (typeof mdat !== 'string')
             throw new TypeError("Invalid MDAT!");
 
         const patient = {
@@ -180,7 +181,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
      * @param {Object} [mdat={}] - MDAT of the Patient. For now, every Object is valid. Default is an empty object.
      */
     service.updateMDAT = function (patient, mdat) {
-        mdat = mdat ?? {};
+        mdat = mdat ?? "";
         patient.mdat = mdat;
 
         if (patient.status > 1)
@@ -198,7 +199,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
         if (!Array.isArray(patientStatus))
             patientStatus = [patientStatus];
 
-            patientKeys = patientKeys ?? Array.from(patients.keys());
+        patientKeys = patientKeys ?? Array.from(patients.keys());
 
         const result = [];
 
@@ -359,7 +360,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
             dataArray.push({
                 pseudonym: patient.pseudonym,
-                mdat: JSON.stringify(patient.mdat)
+                mdat: patient.mdat
             });
         }
 
@@ -432,7 +433,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
             if (typeof mdatString === 'undefined') {
                 patient.status = PatientStatus.NOT_FOUND;
             } else {
-                patient.mdat = JSON.parse(mdatString);
+                patient.mdat = mdatString;
                 patient.status = PatientStatus.FOUND;
             }
         }
