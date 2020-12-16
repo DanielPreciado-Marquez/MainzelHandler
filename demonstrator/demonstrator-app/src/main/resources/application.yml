@@ -1,12 +1,25 @@
-mainzelliste:
-  host: https://zbb-mfm-dev.uni-muenster.de
-  url: ${mainzelliste.host}/mainzelliste/
-  apikey: 123BachelorArbeit321
+pseudonym-handler:
+  mainzelliste:
+    # url: https://zbb-mfm-dev.uni-muenster.de/mainzelliste/
+    url: http://localhost:8080/
+    api:
+      key: 123BachelorArbeit321
+      version: 3.0
+  pseudonym-timeout: 600000
+  request-path: /api
+  url: http://host.docker.internal # 78.94.210.119
+  useCallback: false
 
 server:
-  port: 8080
+  port: 8082
   servlet:
     context-path: /demonstrator
+  # ssl:
+  #   key-store: classpath:keystore.p12
+  #   key-store-password: password
+  #   key-store-type: pkcs12
+  #   key-alias: tomcat
+  #   key-password: password
 
 spring:
   datasource:

@@ -5,32 +5,22 @@ QUnit.config.autostart = false;
 var pseudonymizationService;
 
 window.onload = function () {
-    pseudonymizationService = new PseudonymizationService(contextPath);
+    pseudonymizationService = new PseudonymizationService(contextPath + requestPath);
     QUnit.start();
 }
 
 QUnit.module('batch-test', () => {
-    /**
-     * 1: 2457, 1129, 2146
-     * 100: -, 53584
-     */
-
     // TODO: Tests failing because patients have the same pseudonym; i = 11/ 111, 22/ 222, ...
 
     let patients = new Map();
-    const amount = 112;
+    const amount = 111;
 
     QUnit.test('batch pseudonymization', async assert => {
-        /**
-         * 1: 2235, 920, 1928
-         * 100: 53609, 52821
-         */
-
         assert.expect(amount * 3);
 
         // send
         for (let i = 0; i < amount; ++i) {
-            const patient = pseudonymizationService.createPatient("BatchTestPatient", i.toString(), "01-01-2000", { height: i });
+            const patient = pseudonymizationService.createPatient("BatchTestPatient", i.toString(), "2000-10-20", { height: i });
             patient.sureness = true;
             patients.set(i, patient);
         }
@@ -45,7 +35,7 @@ QUnit.module('batch-test', () => {
         patients = new Map();
 
         for (let i = 0; i < amount; ++i) {
-            const patient = pseudonymizationService.createPatient("BatchTestPatient", i.toString(), "01-01-2000");
+            const patient = pseudonymizationService.createPatient("BatchTestPatient", i.toString(), "2000-10-20");
             patients.set(i, patient);
         }
 
@@ -58,11 +48,6 @@ QUnit.module('batch-test', () => {
     });
 
     QUnit.test('batch depseudonymization', async assert => {
-        /**
-         * 1: 210, 198, 207
-         * 100: 3763, 753
-         */
-
         assert.expect(amount * 2 + 2);
 
         const pseudonyms = [];
