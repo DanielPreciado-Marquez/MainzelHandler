@@ -1,7 +1,9 @@
 package de.wwu.imi.demonstrator.app.controller;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +25,10 @@ public class PatientController extends AbstractPseudonymizationController {
 	private PatientRepository patientRepository;
 
 	@Override
-	public List<Boolean> acceptPatients(List<Patient> patients) {
+	public Map<String, Boolean> acceptPatients(List<Patient> patients) {
 		LOGGER.debug("Storing " + patients.size() + " patients");
 
-		final List<Boolean> success = new ArrayList<Boolean>(patients.size());
+		final Map<String, Boolean> success = new HashMap<String, Boolean>();
 
 		for (final var patient : patients) {
 			LOGGER.debug("Storing Patient: " + patient.toString());
@@ -34,7 +36,7 @@ public class PatientController extends AbstractPseudonymizationController {
 			final var patientEntity = new PatientEntity(patient);
 			patientRepository.save(patientEntity);
 
-			success.add(true);
+			success.put(patient.getPseudonym(), true);
 		}
 		LOGGER.debug("Storing completed");
 

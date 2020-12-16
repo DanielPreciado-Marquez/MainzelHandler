@@ -384,10 +384,8 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
         const successArray = await response.json();
 
         for (let i = 0; i < patientIds.length; i++) {
-            const key = patientIds[i];
-            const success = successArray[i];
-            const patient = patients.get(key);
-            patient.status = success ? PatientStatus.PROCESSED : PatientStatus.NOT_PROCESSED;
+            const patient = patients.get(patientIds[i]);
+            patient.status = successArray[patient.pseudonym] ? PatientStatus.PROCESSED : PatientStatus.NOT_PROCESSED;
         }
     }
 
@@ -429,8 +427,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
         for (let i = 0; i < patientIds.length; ++i) {
             const patient = patients.get(patientIds[i]);
-            const pseudonym = patient.pseudonym;
-            const mdatString = mdatArray[pseudonym];
+            const mdatString = mdatArray[patient.pseudonym];
 
             if (typeof mdatString === 'undefined') {
                 patient.status = PatientStatus.NOT_FOUND;

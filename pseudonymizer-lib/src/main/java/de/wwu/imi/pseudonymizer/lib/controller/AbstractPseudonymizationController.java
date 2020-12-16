@@ -64,7 +64,7 @@ public abstract class AbstractPseudonymizationController {
 	 */
 	@Value("${pseudonym-handler.mainzelliste.api.key}")
 	private String mainzellisteApiKey;
-	
+
 	/**
 	 * Version of the Mainzelliste api.
 	 */
@@ -109,7 +109,8 @@ public abstract class AbstractPseudonymizationController {
 	 * containing the token.
 	 *
 	 * @param amount Amount of requested addPatient token.
-	 * @return PseudonymizationUrlResponse containing the array of urls for pseudonymizations and the value of useCallback.
+	 * @return PseudonymizationUrlResponse containing the array of urls for
+	 *         pseudonymizations and the value of useCallback.
 	 */
 	@PostMapping("/tokens/addPatient")
 	public final PseudonymizationUrlResponse getPseudonymizationUrl(@RequestBody final int amount) {
@@ -158,20 +159,46 @@ public abstract class AbstractPseudonymizationController {
 	 * Accepts a list of patients to be handled by the application.
 	 *
 	 * @param patients List of patients.
+	 * @return Key-value-pairs. The Key is either the pseudonym if
+	 *         {@link #useCallback} is false or the token if {@link #useCallback} is
+	 *         true. The value indicates if the corresponding patient got handled by
+	 *         the application.
 	 */
 	@PostMapping("/patients/send/mdat")
-	public final List<Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients) {
+	public final Map<String, Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients) {
 		LOGGER.info("Recieved " + patients.size() + " patients");
 
+		final Map<String, Boolean> result;
+
 		if (useCallback) {
+
+			final Map<String, String> pseudonyms = new HashMap<String, String>();
+
 			for (final Patient patient : patients) {
 				final String token = patient.getPseudonym();
-				final String pseudonym = pseudonymManager.removeToken(token);
-				patient.setPseudonym(pseudonym);
+
+				if (pseudonymManager.containsToken(token)) {
+					final String pseudonym = pseudonymManager.removeToken(token);
+					pseudonyms.put(pseudonym, token);
+					patient.setPseudonym(pseudonym);
+				} else {
+					LOGGER.debug("No corresponding pseudonym found for token: " + token);
+					patients.remove(patient);
+				}
 			}
+
+			final Map<String, Boolean> resultIntermediate = acceptPatients(patients);
+			result = new HashMap<String, Boolean>();
+
+			for (final var entry : resultIntermediate.entrySet()) {
+				result.put(pseudonyms.get(entry.getKey()), entry.getValue());
+			}
+
+		} else {
+			result = acceptPatients(patients);
 		}
 
-		return acceptPatients(patients);
+		return result;
 	}
 
 	/**
@@ -194,11 +221,10 @@ public abstract class AbstractPseudonymizationController {
 	 *                    pseudonym or the token used for the pseudonymization.
 	 * @param useCallback Indicates if the callback function of the mainzelliste
 	 *                    should be used.
-	 * @return List of mdat.
+	 * @return Map containing the ids and the corresponding mdat.
 	 */
 	@PostMapping("/patients/request")
 	public final Map<String, String> requestPatientsRequest(@RequestBody List<String> ids) {
-
 		LOGGER.debug("Requesting " + ids.size() + " patients");
 
 		final Map<String, String> mdat = new HashMap<String, String>();
@@ -206,7 +232,7 @@ public abstract class AbstractPseudonymizationController {
 		if (useCallback) {
 			// ids are token
 			final Map<String, String> pseudonyms = new HashMap<String, String>();
-			
+
 			for (final String token : ids) {
 				if (pseudonymManager.containsToken(token)) {
 					pseudonyms.put(pseudonymManager.removeToken(token), token);
@@ -214,18 +240,18 @@ public abstract class AbstractPseudonymizationController {
 					LOGGER.debug("No corresponding pseudonym found for token: " + token);
 				}
 			}
-			
+
 			final List<Patient> patients = requestPatients(new ArrayList<String>(pseudonyms.keySet()));
-			
-			for	(final Patient patient : patients) {
+
+			for (final Patient patient : patients) {
 				mdat.put(pseudonyms.get(patient.getPseudonym()), patient.getMdatString());
 			}
 
 		} else {
 			// ids are pseudonyms
 			final List<Patient> patients = requestPatients(ids);
-			
-			for	(final Patient patient : patients) {
+
+			for (final Patient patient : patients) {
 				mdat.put(patient.getPseudonym(), patient.getMdatString());
 			}
 		}
@@ -242,10 +268,10 @@ public abstract class AbstractPseudonymizationController {
 	 * Abstract method to be implemented in the application.
 	 *
 	 * @param patients List of patients.
-	 * @return List containing boolean that indicates if the patients got processed
-	 *         successfully.
+	 * @return Map containing the pseudonym of the patients and a boolean that
+	 *         indicates if the patients got processed successfully.
 	 */
-	public abstract List<Boolean> acceptPatients(final List<Patient> patients);
+	public abstract Map<String, Boolean> acceptPatients(final List<Patient> patients);
 
 	/**
 	 * Abstract method to be implemented in the application.
@@ -424,7 +450,7 @@ public abstract class AbstractPseudonymizationController {
 		}
 
 		final String tokenId;
-		
+
 		if (mainzellisteApiVersion == "1.0") {
 			tokenId = jsonResponse.getString("tokenId");
 		} else {
