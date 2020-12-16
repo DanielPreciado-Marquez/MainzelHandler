@@ -8,7 +8,7 @@ pseudonym-handler:
   pseudonym-timeout: 600000
   request-path: /api
   url: http://host.docker.internal # 78.94.210.119
-  useCallback: true
+  useCallback: false
 
 server:
   port: 8082

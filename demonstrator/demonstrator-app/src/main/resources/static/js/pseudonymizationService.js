@@ -28,9 +28,9 @@
  */
 
 /**
- * Id identifying a patient. Any type is allowed.
+ * Key identifying a patient. Any type is allowed.
  * Only used in client side.
- * @typedef {*} patientId
+ * @typedef {*} patientKey
  */
 
 /**
@@ -189,20 +189,20 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
     /**
      * Searches patients with the given status.
-     * @param {Map<patientId, Patient>} patients - Map with the patients.
+     * @param {Map<patientKey, Patient>} patients - Map with the patients.
      * @param {PatientStatus | PatientStatus[]} patientStatus - Status of the patients to be selected.
-     * @param {patientId[]} [patientIds] - Array of patientIds of the patients to be considered.
-     * @returns {patientId[]} - Ids of th found patients.
+     * @param {patientKey[]} [patientKeys] - Array of patientKeys of the patients to be considered.
+     * @returns {patientKey[]} - Ids of th found patients.
      */
-    service.getPatients = function (patients, patientStatus, patientIds) {
+    service.getPatients = function (patients, patientStatus, patientKeys) {
         if (!Array.isArray(patientStatus))
             patientStatus = [patientStatus];
 
-        patientIds = patientIds ?? Array.from(patients.keys());
+            patientKeys = patientKeys ?? Array.from(patients.keys());
 
         const result = [];
 
-        for (const key of patientIds)
+        for (const key of patientKeys)
             if (patientStatus.includes(patients.get(key).status))
                 result.push(key);
 
@@ -211,33 +211,33 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
     /**
      * Stores the given patients.
-     * @param {Map<patientId, Patient>} patients - Map with the patients.
-     * @param {patientId[]} [patientIds=Array.from(patients.keys())] - Array of patientIds of the patients to be stored.
+     * @param {Map<patientKey, Patient>} patients - Map with the patients.
+     * @param {patientKey[]} [patientKeys=Array.from(patients.keys())] - Array of patientKeys of the patients to be stored.
      * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be send again.
      * @throws Throws an exception if the pseudonymization server is not available.
      * @throws Throws an exception if the database is not available.
      */
-    service.sendPatients = async function (patients, patientIds, retrySucceeded) {
-        patientIds = patientIds ?? Array.from(patients.keys());
+    service.sendPatients = async function (patients, patientKeys, retrySucceeded) {
+        patientKeys = patientKeys ?? Array.from(patients.keys());
         retrySucceeded = retrySucceeded ?? false;
 
-        const pseudonymizedIds = await handlePseudonymization(patients, patientIds, retrySucceeded);
+        const pseudonymizedIds = await handlePseudonymization(patients, patientKeys, retrySucceeded);
         await send(patients, pseudonymizedIds);
     }
 
     /**
      * Requests the MDAT of the given patients.
-     * @param {Map<patientId, Patient>} patients - Map with the patients.
-     * @param {patientId[]} [patientIds=Array.from(patients.keys())] - Array of patientIds of the patients to be searched.
+     * @param {Map<patientKey, Patient>} patients - Map with the patients.
+     * @param {patientKey[]} [patientKeys=Array.from(patients.keys())] - Array of patientKeys of the patients to be searched.
      * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be requested again.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
-    service.requestPatients = async function (patients, patientIds, retrySucceeded) {
-        patientIds = patientIds ?? Array.from(patients.keys());
+    service.requestPatients = async function (patients, patientKeys, retrySucceeded) {
+        patientKeys = patientKeys ?? Array.from(patients.keys());
         retrySucceeded = retrySucceeded ?? false;
 
-        const pseudonymizedIds = await handlePseudonymization(patients, patientIds, retrySucceeded);
+        const pseudonymizedIds = await handlePseudonymization(patients, patientKeys, retrySucceeded);
         await request(patients, pseudonymizedIds);
     }
 
@@ -259,24 +259,24 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
     /**
      * Handles the pseudonymization of the given Patients.
-     * If patientIds is null, every patient in the map will be handled.
+     * If patientKeys is null, every patient in the map will be handled.
      * Patients with status CREATED will be pseudonymized with createPseudonyms.
      * Patients with status CONFLICT will be pseudonymized with resolveConflicts.
      * Patients with status PSEUDONYMIZED be passed through.
      * Every other status will be ignored.
-     * @param {Map<patientId, Patient>} patients - Map with the patients.
-     * @param {patientId[]} patientIds - Array of patientIds of the patients to get pseudonymized.
+     * @param {Map<patientKey, Patient>} patients - Map with the patients.
+     * @param {patientKey[]} patientKeys - Array of patientKeys of the patients to get pseudonymized.
      * @param {boolean} includeSucceeded - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should included.
-     * @returns {Promise<patientId[]>} - Array with the patientIds of successful pseudonymized patients.
+     * @returns {Promise<patientKey[]>} - Array with the patientKeys of successful pseudonymized patients.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
-    async function handlePseudonymization(patients, patientIds, includeSucceeded) {
+    async function handlePseudonymization(patients, patientKeys, includeSucceeded) {
         const created = [];
         const conflicts = [];
         let pseudonymized = [];
 
-        for (const key of patientIds) {
+        for (const key of patientKeys) {
             const patient = patients.get(key);
 
             switch (patient.status) {
@@ -345,16 +345,16 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
     /**
      * Sends patients to the server.
      * The patients must have a pseudonym.
-     * @param {Map<patientId, Patient>} patients - Map with patients.
-     * @param {patientId[]} patientIds - Array of patientIds of the patients to be send.
+     * @param {Map<patientKey, Patient>} patients - Map with patients.
+     * @param {patientKey[]} patientKeys - Array of patientKeys of the patients to be send.
      * @throws Throws an exception if the server is not available.
      */
-    async function send(patients, patientIds) {
-        if (patientIds.length === 0) return;
+    async function send(patients, patientKeys) {
+        if (patientKeys.length === 0) return;
 
         const dataArray = [];
 
-        for (const key of patientIds) {
+        for (const key of patientKeys) {
             const patient = patients.get(key);
 
             dataArray.push({
@@ -383,8 +383,8 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
         const successArray = await response.json();
 
-        for (let i = 0; i < patientIds.length; i++) {
-            const patient = patients.get(patientIds[i]);
+        for (let i = 0; i < patientKeys.length; i++) {
+            const patient = patients.get(patientKeys[i]);
             patient.status = successArray[patient.pseudonym] ? PatientStatus.PROCESSED : PatientStatus.NOT_PROCESSED;
         }
     }
@@ -392,17 +392,17 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
     /**
      * Requests patients from the server and sets the mdat.
      * The patients must have a pseudonym.
-     * @param {Map<patientId, Patient>} patients - Map with patients.
-     * @param {patientId[]} patientIds - Array of patientIds of the patients to get searched.
+     * @param {Map<patientKey, Patient>} patients - Map with patients.
+     * @param {patientKey[]} patientKeys - Array of patientKeys of the patients to get searched.
      * @throws Throws an exception if the server is not available.
      */
-    async function request(patients, patientIds) {
-        if (patientIds.length === 0) return;
+    async function request(patients, patientKeys) {
+        if (patientKeys.length === 0) return;
 
         const dataArray = [];
 
-        for (let i = 0; i < patientIds.length; ++i) {
-            dataArray.push(patients.get(patientIds[i]).pseudonym);
+        for (let i = 0; i < patientKeys.length; ++i) {
+            dataArray.push(patients.get(patientKeys[i]).pseudonym);
         }
 
         const requestURL = serverURL + "/patients/request";
@@ -425,8 +425,8 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
         const mdatArray = await response.json();
 
-        for (let i = 0; i < patientIds.length; ++i) {
-            const patient = patients.get(patientIds[i]);
+        for (let i = 0; i < patientKeys.length; ++i) {
+            const patient = patients.get(patientKeys[i]);
             const mdatString = mdatArray[patient.pseudonym];
 
             if (typeof mdatString === 'undefined') {
@@ -441,21 +441,21 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
     /**
      * Creates pseudonyms for the given patients.
      * The patients must have the status CREATED.
-     * @param {Map<patientId, Patient>} patients - Map with patients.
-     * @param {patientId[]} [patientIds] - PatientIds of the patients to get pseudonymized.
-     * @returns {Promise<{pseudonymized: patientId[]; conflicts: patientId[];}>} Arrays of keys that got pseudonymized have a conflict.
+     * @param {Map<patientKey, Patient>} patients - Map with patients.
+     * @param {patientKey[]} [patientKeys] - PatientKeys of the patients to get pseudonymized.
+     * @returns {Promise<{pseudonymized: patientKey[]; conflicts: patientKey[];}>} Arrays of keys that got pseudonymized have a conflict.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
-    async function createPseudonyms(patients, patientIds) {
+    async function createPseudonyms(patients, patientKeys) {
         const pseudonymized = [];
         const conflicts = [];
 
-        if (patientIds.length !== 0) {
-            const response = await getPseudonymizationURL(patientIds.length);
+        if (patientKeys.length !== 0) {
+            const response = await getPseudonymizationURL(patientKeys.length);
 
-            for (let i = 0; i < patientIds.length; ++i) {
-                const key = patientIds[i];
+            for (let i = 0; i < patientKeys.length; ++i) {
+                const key = patientKeys[i];
                 const patient = patients.get(key);
                 const success = await getPseudonym(response.urlTokens[i], patient, response.useCallback);
 
@@ -473,18 +473,18 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
     /**
      * Resolves conflicts of patients.
      * The patients must have a conflict.
-     * @param {Map<patientId, Patient>} patients - Map with patients.
-     * @param {patientId[]} patientIds - PatientIds of the patients with conflicts to resolve.
-     * @returns {Promise<{pseudonymized: patientId[]; conflicts: patientId[];}>} PatientIds of the patients that got pseudonymized and that new conflicts
+     * @param {Map<patientKey, Patient>} patients - Map with patients.
+     * @param {patientKey[]} patientKeys - PatientKeys of the patients with conflicts to resolve.
+     * @returns {Promise<{pseudonymized: patientKey[]; conflicts: patientKey[];}>} PatientKeys of the patients that got pseudonymized and that new conflicts
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
-    async function resolveConflicts(patients, patientIds) {
+    async function resolveConflicts(patients, patientKeys) {
         let pseudonymized = [];
         let conflicts = [];
         const invalidTokens = [];
 
-        for (const key of patientIds) {
+        for (const key of patientKeys) {
             const patient = patients.get(key);
 
             if (patient.statusCode === PatientStatus.TOKEN_INVALID) {

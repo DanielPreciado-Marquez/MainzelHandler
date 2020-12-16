@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * @type {Map<patientId, Patient>}
+ * @type {Map<patientKey, Patient>}
  */
 var patients = new Map();
 var nextKey = 0;
