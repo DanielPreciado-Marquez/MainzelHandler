@@ -168,21 +168,28 @@ QUnit.module('createPatient', () => {
         assert.expect(1);
 
         const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
-        assert.deepEqual(patient.mdat, {}, 'Compare MDAT');
+        assert.strictEqual(patient.mdat, "", 'Compare MDAT');
     });
 
     QUnit.test('Create regular with MDAT null', assert => {
         assert.expect(1);
 
         const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20", null);
-        assert.deepEqual(patient.mdat, {}, 'Compare MDAT');
+        assert.deepEqual(patient.mdat, "", 'Compare MDAT');
     });
 
-    QUnit.test('Create regular with MDAT', assert => {
+    QUnit.test('Create regular with MDAT string', assert => {
         assert.expect(1);
 
-        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20", { height: 180 });
-        assert.deepEqual(patient.mdat, { height: 180 }, 'Compare MDAT');
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20", "mdat");
+        assert.strictEqual(patient.mdat, "mdat", 'Compare MDAT');
+    });
+
+    QUnit.test('Create regular with MDAT stringified JS-object', assert => {
+        assert.expect(1);
+
+        const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20", JSON.stringify({ height: 180 }));
+        assert.deepEqual(JSON.parse(patient.mdat), { height: 180 }, 'Compare MDAT');
     });
 
     QUnit.test('Invalid MDAT', assert => {
@@ -190,10 +197,10 @@ QUnit.module('createPatient', () => {
 
         assert.throws(
             () => {
-                pseudonymizationService.createPatient("a", "s", "2020-10-20", "");
+                pseudonymizationService.createPatient("a", "s", "2020-10-20", { height: 180 });
             },
             /Invalid MDAT!/,
-            'MDAT wrong type (string)'
+            'MDAT wrong type (object)'
         );
     });
 
@@ -312,9 +319,9 @@ QUnit.module('updateMDAT', () => {
         const patient = pseudonymizationService.createPatient("a", "s", "2020-10-20");
 
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status before');
-        assert.deepEqual(patient.mdat, {}, 'Compare MDAT before');
+        assert.deepEqual(patient.mdat, "", 'Compare MDAT before');
 
-        const mdat = { testProperty: 0 };
+        const mdat = JSON.stringify({ testProperty: 0 });
         pseudonymizationService.updateMDAT(patient, mdat);
 
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status after');
@@ -328,9 +335,9 @@ QUnit.module('updateMDAT', () => {
         patient.status = PatientStatus.PROCESSED;
 
         assert.strictEqual(patient.status, PatientStatus.PROCESSED, 'Compare status before');
-        assert.deepEqual(patient.mdat, {}, 'Compare MDAT before');
+        assert.deepEqual(patient.mdat, "", 'Compare MDAT before');
 
-        const mdat = { testProperty: 0 };
+        const mdat = JSON.stringify({ testProperty: 0 });
         pseudonymizationService.updateMDAT(patient, mdat);
 
         assert.strictEqual(patient.status, PatientStatus.PSEUDONYMIZED, 'Compare status after');

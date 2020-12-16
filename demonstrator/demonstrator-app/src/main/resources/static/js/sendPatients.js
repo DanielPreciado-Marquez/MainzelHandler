@@ -26,7 +26,7 @@ function createPatient() {
             const patient = patients.get(key);
             pseudonymizationService.updateIDAT(patient, patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
         } else {
-            const patient = pseudonymizationService.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value, { height: 180 });
+            const patient = pseudonymizationService.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value, JSON.stringify({ height: 180 }));
             patients.set(nextKey++, patient);
         }
 

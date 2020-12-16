@@ -47,7 +47,7 @@ public class PatientController extends AbstractPseudonymizationController {
 	public List<Patient> requestPatients(List<String> pseudonyms) {
 		LOGGER.debug("Requesting " + pseudonyms.size() + " patients");
 
-		final var patients = new ArrayList<Patient>(pseudonyms.size());
+		final var patients = new ArrayList<Patient>();
 
 		for (final String pseudonym : pseudonyms) {
 			LOGGER.debug("Searching in database: " + pseudonym);

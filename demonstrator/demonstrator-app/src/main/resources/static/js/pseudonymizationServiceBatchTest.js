@@ -20,7 +20,7 @@ QUnit.module('batch-test', () => {
 
         // send
         for (let i = 0; i < amount; ++i) {
-            const patient = pseudonymizationService.createPatient("BatchTestPatient", i.toString(), "2000-10-20", { height: i });
+            const patient = pseudonymizationService.createPatient("BatchTestPatient", i.toString(), "2000-10-20", JSON.stringify({ height: i }));
             patient.sureness = true;
             patients.set(i, patient);
         }
@@ -43,7 +43,7 @@ QUnit.module('batch-test', () => {
 
         for (const [key, patient] of patients.entries()) {
             assert.strictEqual(patient.status, PatientStatus.FOUND, "Compare status of patient " + key);
-            assert.deepEqual(patient.mdat, { height: key }, "Compare MDAT of patient " + key);
+            assert.deepEqual(JSON.parse(patient.mdat), { height: key }, "Compare MDAT of patient " + key);
         }
     });
 

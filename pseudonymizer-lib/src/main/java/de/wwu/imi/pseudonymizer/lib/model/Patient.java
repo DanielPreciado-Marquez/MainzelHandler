@@ -11,19 +11,13 @@ public class Patient {
 
 	/**
 	 * Medical data of the patient. There are no further restrictions for the data.
-	 * It can be null, empty or contain any valid key value pair.
 	 */
-	private JSONObject mdat;
+	private String mdat;
 
 	public Patient() {
 	}
 
 	public Patient(final String pseudonym, final String mdat) {
-		this.pseudonym = pseudonym;
-		this.mdat = new JSONObject(mdat);
-	}
-
-	public Patient(final String pseudonym, final JSONObject mdat) {
 		this.pseudonym = pseudonym;
 		this.mdat = mdat;
 	}
@@ -36,25 +30,17 @@ public class Patient {
 		this.pseudonym = pseudonym;
 	}
 
-	public JSONObject getMdat() {
+	public String getMdat() {
 		return mdat;
 	}
 
-	public String getMdatString() {
-		return mdat.toString();
-	}
-
-	public void setMdat(final JSONObject mdat) {
+	public void setMdat(final String mdat) {
 		this.mdat = mdat;
 	}
 
-	public void setMdat(final String mdat) {
-		this.mdat = new JSONObject(mdat);
-	}
-
 	/**
-	 * Determines if two patients are equal. Two patients are equal, if the
-	 * pseudonyms are equal and the mdat's are similar.
+	 * Determines if two patients are equal. Two patients are equal if the pseudonym
+	 * and the mdat are equal.
 	 *
 	 * @see JSONObject#similar(Object)
 	 */
@@ -66,7 +52,11 @@ public class Patient {
 
 		final var patient = (Patient) object;
 
-		return (pseudonym == patient.pseudonym && mdat.similar(patient.mdat));
+		final boolean pseudonymEqual = pseudonym == null ? patient.pseudonym == null
+				: pseudonym.equals(patient.pseudonym);
+		final boolean mdatEqual = mdat == null ? patient.mdat == null : mdat.equals(patient.mdat);
+
+		return pseudonymEqual && mdatEqual;
 	}
 
 	@Override
