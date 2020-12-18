@@ -18,17 +18,22 @@ public class PatientEntity {
 	@Column(name = "mdat")
 	private String mdat;
 
+	@Column(name = "tentative")
+	private boolean tentative;
+
 	public PatientEntity() {
 	}
 
-	public PatientEntity(final String pseudonym, final String mdat) {
+	public PatientEntity(final String pseudonym, final String mdat, final boolean tentative) {
 		this.pseudonym = pseudonym;
 		this.mdat = mdat;
+		this.tentative = tentative;
 	}
 
 	public PatientEntity(final Patient patient) {
 		this.pseudonym = patient.getPseudonym();
 		this.mdat = patient.getMdat();
+		this.tentative = patient.isTentative();
 	}
 
 	public String getPseudonym() {
@@ -47,9 +52,17 @@ public class PatientEntity {
 		this.mdat = mdat;
 	}
 
+	public boolean isTentative() {
+		return tentative;
+	}
+
+	public void setTentative(final boolean tentative) {
+		this.tentative = tentative;
+	}
+
 	@Override
 	public String toString() {
-		return "pseudonym: " + pseudonym + ", mdat: " + mdat;
+		return "pseudonym: " + pseudonym + ", tentative: " + tentative + ", mdat: " + mdat;
 	}
 
 }

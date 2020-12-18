@@ -1,5 +1,7 @@
 'use strict';
 
+import { PatientStatus, PseudonymizationService } from "./pseudonymizationService.js";
+
 QUnit.config.autostart = false;
 
 var pseudonymizationService;
@@ -46,13 +48,13 @@ QUnit.module('pseudonymization', () => {
 
         await pseudonymizationService.sendPatients(patients);
 
-        assert.strictEqual(patient0.status, PatientStatus.PROCESSED, 'Compare status');
-        assert.strictEqual(patient0.pseudonym, "000CU0WP", 'Compare pseudonym');
-        assert.strictEqual(patient0.tokenURL, null, 'Compare tokenURL');
+        assert.strictEqual(patient0.status, PatientStatus.PROCESSED, 'Compare status of patient0');
+        assert.strictEqual(patient0.pseudonym, "000CU0WP", 'Compare pseudonym of patient0');
+        assert.strictEqual(patient0.tokenURL, null, 'Compare tokenURL of patient0');
 
-        assert.strictEqual(patient1.status, PatientStatus.IDAT_CONFLICT, 'Compare status');
-        assert.strictEqual(patient1.pseudonym, null, 'Compare pseudonym');
-        assert.true((typeof patient1.tokenURL === 'string'), 'Check tokenURL');
+        assert.strictEqual(patient1.status, PatientStatus.IDAT_CONFLICT, 'Compare status of patient1');
+        assert.strictEqual(patient1.pseudonym, null, 'Compare pseudonym of patient1');
+        assert.true((typeof patient1.tokenURL === 'string'), 'Check tokenURL of patient1');
 
         // should resolve the conflict
         pseudonymizationService.updateIDAT(patient1, "Integration", "Test", "2020-10-20");
@@ -109,7 +111,7 @@ QUnit.module('depseudonymization', hooks => {
     });
 
     QUnit.test('successful depseudonymization', async assert => {
-        assert.expect(6);
+        assert.expect(7);
 
         const pseudonym = '000CU0WP';
         const { depseudonymized, invalid } = await pseudonymizationService.depseudonymize(pseudonym);
@@ -118,11 +120,13 @@ QUnit.module('depseudonymization', hooks => {
         assert.true(depseudonymized.has(pseudonym), "Check if pseudonym got depseudonymized");
         assert.strictEqual(invalid.length, 0, "Check amount of invalid pseudonyms")
 
-        const idat = depseudonymized.get(pseudonym);
+        const idat = depseudonymized.get(pseudonym).idat;
+        const tentative = depseudonymized.get(pseudonym).tentative;
 
         assert.strictEqual(idat.firstname, firstname, "Compare firstname");
         assert.strictEqual(idat.lastname, lastname, "Compare lastname");
         assert.strictEqual(idat.birthday.getTime(), birthday.getTime(), "Compare birthday");
+        assert.strictEqual(tentative, false, "Compare tentative");
     });
 
     QUnit.test('invalid depseudonymization', async assert => {
@@ -137,7 +141,7 @@ QUnit.module('depseudonymization', hooks => {
     });
 
     QUnit.test('mixed depseudonymization', async assert => {
-        assert.expect(10);
+        assert.expect(11);
 
         const pseudonym0 = '';
         const pseudonym1 = '000CU0WP';
@@ -154,11 +158,13 @@ QUnit.module('depseudonymization', hooks => {
         assert.true(depseudonymized.has(pseudonym1), "Check if H0N587RL got depseudonymized");
         assert.true(depseudonymized.has(pseudonym5), "Check if 0007W0W9 got depseudonymized");
 
-        const idat = depseudonymized.get(pseudonym1);
+        const idat = depseudonymized.get(pseudonym1).idat;
+        const tentative = depseudonymized.get(pseudonym1).tentative;
 
         assert.strictEqual(idat.firstname, firstname, "Compare firstname");
         assert.strictEqual(idat.lastname, lastname, "Compare lastname");
         assert.strictEqual(idat.birthday.getTime(), birthday.getTime(), "Compare birthday");
+        assert.strictEqual(tentative, false, "Compare tentative");
 
         assert.strictEqual(invalid.length, 2, "Check amount of invalid pseudonyms");
         assert.true(invalid.includes(pseudonym0), "Check if pseudonym is invalid: " + pseudonym0);

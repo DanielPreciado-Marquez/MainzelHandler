@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -167,12 +168,15 @@ public abstract class AbstractPseudonymizationController {
 	@PostMapping("/patients/send/mdat")
 	public final Map<String, Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients) {
 		LOGGER.info("Recieved " + patients.size() + " patients");
+		LOGGER.debug(patients.get(0).toString());
 
 		final Map<String, Boolean> result;
 
 		if (useCallback) {
 
 			final Map<String, String> pseudonyms = new HashMap<String, String>();
+
+			final List<Patient> pseudonymizedPatients = new ArrayList<>();
 
 			for (final Patient patient : patients) {
 				final String token = patient.getPseudonym();
@@ -181,16 +185,16 @@ public abstract class AbstractPseudonymizationController {
 					final String pseudonym = pseudonymManager.removeToken(token);
 					pseudonyms.put(pseudonym, token);
 					patient.setPseudonym(pseudonym);
+					pseudonymizedPatients.add(patient);
 				} else {
 					LOGGER.debug("No corresponding pseudonym found for token: " + token);
-					patients.remove(patient);
 				}
 			}
 
-			final Map<String, Boolean> resultIntermediate = acceptPatients(patients);
+			final Map<String, Boolean> resultIntermediate = acceptPatients(pseudonymizedPatients);
 			result = new HashMap<String, Boolean>();
 
-			for (final var entry : resultIntermediate.entrySet()) {
+			for (final Entry<String, Boolean> entry : resultIntermediate.entrySet()) {
 				result.put(pseudonyms.get(entry.getKey()), entry.getValue());
 			}
 
@@ -224,39 +228,35 @@ public abstract class AbstractPseudonymizationController {
 	 * @return Map containing the ids and the corresponding mdat.
 	 */
 	@PostMapping("/patients/request")
-	public final Map<String, String> requestPatientsRequest(@RequestBody List<String> ids) {
+	public final List<Patient> requestPatientsRequest(@RequestBody List<String> ids) {
 		LOGGER.debug("Requesting " + ids.size() + " patients");
 
-		final Map<String, String> mdat = new HashMap<String, String>();
+		final List<Patient> patients;
 
 		if (useCallback) {
 			// ids are token
-			final Map<String, String> pseudonyms = new HashMap<String, String>();
+			final Map<String, String> pseudonymsAndTokens = new HashMap<String, String>();
 
 			for (final String token : ids) {
 				if (pseudonymManager.containsToken(token)) {
-					pseudonyms.put(pseudonymManager.removeToken(token), token);
+					pseudonymsAndTokens.put(pseudonymManager.removeToken(token), token);
 				} else {
 					LOGGER.debug("No corresponding pseudonym found for token: " + token);
 				}
 			}
 
-			final List<Patient> patients = requestPatients(new ArrayList<String>(pseudonyms.keySet()));
+			patients = requestPatients(new ArrayList<String>(pseudonymsAndTokens.keySet()));
 
 			for (final Patient patient : patients) {
-				mdat.put(pseudonyms.get(patient.getPseudonym()), patient.getMdat());
+				patient.setPseudonym(pseudonymsAndTokens.get(patient.getPseudonym()));
 			}
 
 		} else {
 			// ids are pseudonyms
-			final List<Patient> patients = requestPatients(ids);
-
-			for (final Patient patient : patients) {
-				mdat.put(patient.getPseudonym(), patient.getMdat());
-			}
+			patients = requestPatients(ids);
 		}
 
-		return mdat;
+		return patients;
 	}
 
 	@ExceptionHandler({ MainzellisteException.class, MainzellisteConnectionException.class })

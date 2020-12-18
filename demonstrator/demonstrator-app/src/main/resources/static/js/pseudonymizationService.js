@@ -20,12 +20,14 @@
 /**
  * Object representing a patient.
  * @typedef {Object} Patient
- * @property {PatientStatus} status Status of the pseudonymization.
- * @property {boolean} sureness Sureness of the idat. See documentation of the Mainzelliste.
- * @property {string} pseudonym Pseudonym of this patient. null until it got created via createPseudonyms.
  * @property {IDAT} idat IDAT of this patient.
  * @property {MDAT} mdat MDAT of this patient. May be null.
+ * @property {string} pseudonym Pseudonym of this patient. null until it got created via createPseudonyms.
+ * @property {boolean} sureness Sureness of the idat. See documentation of the Mainzelliste.
+ * @property {PatientStatus} status Status of the pseudonymization.
+ * @property {boolean} tentative Tentative value from the pseudonymization.
  * @property {string} tokenURL Token used for the pseudonymization attempt. Can be reused until the conflict is resolved.
+ * @property {boolean} tokenUseCallback
  */
 
 /**
@@ -101,7 +103,9 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
             pseudonym: null,
             idat: idat,
             mdat: mdat,
-            tokenURL: null
+            tentative: false,
+            tokenURL: null,
+            tokenUseCallback: null
         };
 
         return patient;
@@ -185,7 +189,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
         patient.mdat = mdat;
 
         if (patient.status > 1)
-            patient.status = PatientStatus.PSEUDONYMIZED;
+            patient.status = (patient.status !== PatientStatus.PSEUDONYMIZED && patient.tokenUseCallback === true) ? PatientStatus.CREATED : PatientStatus.PSEUDONYMIZED;
     }
 
     /**
@@ -299,8 +303,13 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
                 case PatientStatus.NOT_PROCESSED:
                 case PatientStatus.FOUND:
                 case PatientStatus.NOT_FOUND:
-                    if (includeSucceeded)
-                        pseudonymized.push(key);
+                    if (includeSucceeded) {
+                        if (patient.tokenUseCallback === true) {
+                            created.push(key);
+                        } else {
+                            pseudonymized.push(key);
+                        }
+                    }
                     break;
 
                 default:
@@ -337,7 +346,8 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
         for (const entry of responseArray) {
             const pseudonym = entry.ids[0].idString;
             const idat = service.createIDAT(entry.fields.vorname, entry.fields.nachname, entry.fields.geburtsjahr + "-" + entry.fields.geburtsmonat + "-" + entry.fields.geburtstag);
-            depseudonymized.set(pseudonym, idat);
+            const tentative = entry.ids[0].tentative;
+            depseudonymized.set(pseudonym, { idat, tentative });
         }
 
         return { depseudonymized, invalid: invalidPseudonyms };
@@ -360,7 +370,8 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
             dataArray.push({
                 pseudonym: patient.pseudonym,
-                mdat: patient.mdat
+                mdat: patient.mdat,
+                tentative: patient.tentative
             });
         }
 
@@ -424,16 +435,23 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
         if (!response.ok)
             throw new Error(await response.text());
 
-        const mdatArray = await response.json();
+        const receivedPatients = await response.json();
 
-        for (let i = 0; i < patientKeys.length; ++i) {
-            const patient = patients.get(patientKeys[i]);
-            const mdatString = mdatArray[patient.pseudonym];
+        for (const patientKey of patientKeys) {
+            const patient = patients.get(patientKey);
+            let correspondingPatient = -1;
 
-            if (typeof mdatString === 'undefined') {
+            for (const receivedPatient of receivedPatients) {
+                if (receivedPatient.pseudonym === patient.pseudonym) {
+                    correspondingPatient = receivedPatient;
+                    break;
+                }
+            }
+
+            if (correspondingPatient === -1) {
                 patient.status = PatientStatus.NOT_FOUND;
             } else {
-                patient.mdat = mdatString;
+                patient.mdat = correspondingPatient.mdat;
                 patient.status = PatientStatus.FOUND;
             }
         }
@@ -458,7 +476,9 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
             for (let i = 0; i < patientKeys.length; ++i) {
                 const key = patientKeys[i];
                 const patient = patients.get(key);
-                const success = await getPseudonym(response.urlTokens[i], patient, response.useCallback);
+                patient.tokenUseCallback = response.useCallback;
+                patient.tokenURL = response.urlTokens[i];
+                const success = await getPseudonym(patient);
 
                 if (success) {
                     pseudonymized.push(key);
@@ -491,7 +511,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
             if (patient.statusCode === PatientStatus.TOKEN_INVALID) {
                 invalidTokens.push(key);
             } else {
-                const success = await getPseudonym(patient.tokenURL, patient);
+                const success = await getPseudonym(patient);
 
                 if (success) {
                     pseudonymized.push(key);
@@ -577,13 +597,11 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
      * The requestURL can be crated with getPseudonymizationURL.
      * Sets the status to the result of the pseudonymization.
      * If a conflict with the IDAT occurs, the tokenURL will be set.
-     * @param {string} requestURL - URL for the pseudonymization.
      * @param {Patient} patient - Patient to get pseudonymized.
-     * @param {boolean} useCallback - Indicates if the callback function of the Mainzelliste will be used.
      * @returns {Promise<boolean>} Returns whether the pseudonymization was successful or not.
      * @throws Throws an exception if the Mainzelliste is not available.
      */
-    async function getPseudonym(requestURL, patient, useCallback) {
+    async function getPseudonym(patient) {
 
         // This is important!
         // --------------------
@@ -617,6 +635,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
             body: requestBody
         };
 
+        const requestURL = patient.tokenURL;
         const response = await fetch(requestURL, options);
 
         if (typeof response === "undefined")
@@ -625,10 +644,11 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
         switch (response.status) {
             case 201:
                 const responseBody = await response.json();
-                patient.pseudonym = (useCallback) ? requestURL.split("=")[1]
+                patient.pseudonym = (patient.tokenUseCallback) ? requestURL.split("=")[1]
                     : (mainzellisteApiVersion === "1.0") ? responseBody.newId
-                        : responseBody[0].idString
+                        : responseBody[0].idString;
                 patient.status = PatientStatus.PSEUDONYMIZED;
+                patient.tentative = responseBody[0].tentative;
                 patient.tokenURL = null;
                 break;
 
@@ -645,6 +665,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
                 // The token is invalid
                 patient.status = PatientStatus.TOKEN_INVALID;
                 patient.tokenURL = null;
+                patient.tokenUseCallback = null;
                 break;
 
             case 409:
@@ -688,3 +709,5 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
 
     return service;
 }
+
+export { PatientStatus, PseudonymizationService };

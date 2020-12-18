@@ -52,11 +52,12 @@ public class PatientController extends AbstractPseudonymizationController {
 		for (final String pseudonym : pseudonyms) {
 			LOGGER.debug("Searching in database: " + pseudonym);
 
-			final var patientEntity = patientRepository.findById(pseudonym);
+			final var patientEntityOptional = patientRepository.findById(pseudonym);
 
-			if (patientEntity.isPresent()) {
-				LOGGER.debug("Found: " + pseudonym + ", mdat: " + patientEntity.get().getMdat());
-				patients.add(new Patient(pseudonym, patientEntity.get().getMdat()));
+			if (patientEntityOptional.isPresent()) {
+				final PatientEntity patientEntity = patientEntityOptional.get();
+				LOGGER.debug("Found: " + patientEntity.toString());
+				patients.add(new Patient(pseudonym, patientEntity.getMdat(), patientEntity.isTentative()));
 			} else {
 				LOGGER.debug("Not found: " + pseudonym);
 			}
