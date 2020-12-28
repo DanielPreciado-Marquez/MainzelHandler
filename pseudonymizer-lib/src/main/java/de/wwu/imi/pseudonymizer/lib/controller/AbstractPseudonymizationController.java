@@ -99,7 +99,7 @@ public abstract class AbstractPseudonymizationController {
 	/**
 	 * Determines if the callback function of the mainzelliste should be used.
 	 */
-	@Value("${pseudonym-handler.useCallback:true}")
+	@Value("${pseudonym-handler.useCallback:false}")
 	private boolean useCallback;
 
 	@Autowired
