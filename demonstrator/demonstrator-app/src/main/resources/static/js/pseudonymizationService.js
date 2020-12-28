@@ -182,14 +182,17 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
      * Sets the MDAT of the given patient.
      * If the patient got send or requested, the status will be set to PSEUDONYMIZED.
      * @param {Patient} patient - Patient to be updated.
-     * @param {Object} [mdat={}] - MDAT of the Patient. For now, every Object is valid. Default is an empty object.
+     * @param {string} [mdat=""] - MDAT of the Patient. For now, every Object is valid. Default is an empty object.
      */
     service.updateMDAT = function (patient, mdat) {
         mdat = mdat ?? "";
-        patient.mdat = mdat;
 
-        if (patient.status > 1)
-            patient.status = (patient.status !== PatientStatus.PSEUDONYMIZED && patient.tokenUseCallback === true) ? PatientStatus.CREATED : PatientStatus.PSEUDONYMIZED;
+        if (patient.mdat !== mdat) {
+            patient.mdat = mdat;
+
+            if (patient.status > 1)
+                patient.status = (patient.status !== PatientStatus.PSEUDONYMIZED && patient.tokenUseCallback === true) ? PatientStatus.CREATED : PatientStatus.PSEUDONYMIZED;
+        }
     }
 
     /**
@@ -250,7 +253,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
      * Depseudonymizes pseudonyms.
      * Returns a map containing the pseudonyms with the corresponding IDAT and an array containing all the pseudonyms without an IDAT.
      * @param {string | string[]} pseudonyms - Pseudonyms to depseudonymize.
-     * @returns {Promise<{depseudonymized: Map<string, IDAT>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
+     * @returns {Promise<{depseudonymized: Map<string, {idat: IDAT; tentative: boolean;}>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
@@ -326,7 +329,7 @@ function PseudonymizationService(serverURL, mainzellisteApiVersion) {
     /**
      * Depseudonymizes the given pseudonyms
      * @param {string[]} pseudonyms - Pseudonyms to get depseudonymized.
-     * @returns {Promise<{depseudonymized: Map<string, IDAT>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
+     * @returns {Promise<{depseudonymized: Map<string, {idat: IDAT; tentative: boolean;}>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
