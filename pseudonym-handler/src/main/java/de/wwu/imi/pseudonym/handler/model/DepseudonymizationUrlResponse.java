@@ -12,27 +12,51 @@ import de.wwu.imi.pseudonym.handler.controller.AbstractPseudonymizationControlle
  */
 public class DepseudonymizationUrlResponse {
 
+	/**
+	 * URL for the depseudonymization.
+	 */
 	private String url;
 
+	/**
+	 * List of invalid pseudonyms.
+	 */
 	private List<String> invalidPseudonyms;
 
+	/**
+	 * Constructs a new DepseudonymizationUrlResponse.
+	 *
+	 * @param psedonymizationUrl URL for the depseudonymization.
+	 * @param invlaidPseudonyms  List of invalid pseudonyms.
+	 */
 	public DepseudonymizationUrlResponse(final String psedonymizationUrl, final List<String> invlaidPseudonyms) {
 		this.url = psedonymizationUrl;
 		this.invalidPseudonyms = invlaidPseudonyms;
 	}
 
+	/**
+	 * @return URL for the depseudonymization.
+	 */
 	public String getUrl() {
 		return url;
 	}
 
+	/**
+	 * @param pseudonymizationUrl URL for the depseudonymization.
+	 */
 	public void setUrl(final String pseudonymizationUrl) {
 		this.url = pseudonymizationUrl;
 	}
 
+	/**
+	 * @return List of invalid pseudonyms.
+	 */
 	public List<String> getInvalidPseudonyms() {
 		return invalidPseudonyms;
 	}
 
+	/**
+	 * @param invalidPseudonyms List of invalid pseudonyms.
+	 */
 	public void setInvalidPseudonyms(final List<String> invalidPseudonyms) {
 		this.invalidPseudonyms = invalidPseudonyms;
 	}

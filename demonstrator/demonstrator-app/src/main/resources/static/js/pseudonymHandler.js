@@ -27,7 +27,7 @@
  * @property {PatientStatus} status Status of the pseudonymization.
  * @property {boolean} tentative Tentative value from the pseudonymization.
  * @property {string} tokenURL Token used for the pseudonymization attempt. Can be reused until the conflict is resolved.
- * @property {boolean} tokenUseCallback
+ * @property {boolean} tokenUseCallback Whether the token uses the callback function.
  */
 
 /**
@@ -45,15 +45,15 @@
 
 /**
  * The PatientStatus can have following values:
- * -3: The patient has an unsolved conflict.
- * -2: The stored tokenURL is invalid.
- * -1: The IDAT is invalid. This should be prevented by createIDAT.
- * 0: The patient got successful created and has valid IDAT.
- * 1: The pseudonym has benn created.
- * 11: The server processed the MDAT was successfully.
- * 12: The server did not processed the MDAT was successfully.
- * 21: Patient was successfully found in the database.
- * 22: There is no patient with the given IDAT.
+ * - -3: The patient has an unsolved conflict.
+ * - -2: The stored tokenURL is invalid.
+ * - -1: The IDAT is invalid.
+ * - 0: The patient got successful created and has valid IDAT.
+ * - 1: The pseudonym has benn created.
+ * - 11: The server processed the MDAT was successfully.
+ * - 12: The server did not processed the MDAT was successfully.
+ * - 21: Patient was successfully found in the database.
+ * - 22: There is no patient with the given IDAT.
  * @typedef {number} PatientStatus
  */
 const PatientStatus = Object.freeze({
@@ -71,8 +71,8 @@ const PatientStatus = Object.freeze({
 /**
  * This module is used to connect to the configured Pseudonymization service.
  * TODO: Maybe change patient into a class to prevent manuel changing the properties
- * @param {string} serverURL - URL of the MDAT server.
- * @param {string} [mainzellisteApiVersion=3.0] - Version of the Mainzelliste api to be used.
+ * @param {string} serverURL URL of the MDAT server.
+ * @param {string} [mainzellisteApiVersion=3.0] Version of the Mainzelliste api to be used. Default is 3.0.
  */
 function PseudonymHandler(serverURL, mainzellisteApiVersion) {
     mainzellisteApiVersion = mainzellisteApiVersion ?? "3.0";
@@ -81,12 +81,11 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
     /**
      * Creates a new Patient.
-     * Validates the idat.
-     * @param {string} firstname - Firstname of the patient.
-     * @param {string} lastname - Lastname of the patient.
-     * @param {string | number | Date} birthday - Birthday of the patient.
-     * @param {Object} [mdat={}] - MDAT of the Patient. For now, every Object is valid. Default is an empty object.
-     * @returns {Patient} - The patient.
+     * @param {string} firstname Firstname of the patient.
+     * @param {string} lastname Lastname of the patient.
+     * @param {string | number | Date} birthday Birthday of the patient.
+     * @param {string} [mdat=""] MDAT of the Patient as a string. Default is an empty string.
+     * @returns {Patient} The patient.
      * @throws Throws an exception if the IDAT is not valid.
      */
     service.createPatient = function (firstname, lastname, birthday, mdat) {
@@ -114,10 +113,10 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
     /**
      * Validates Updates the IDAT of the given patient.
      * If the given IDAT is different from the current one and the patient has a pseudonym, the pseudonym well be reset and the status will be set to CREATED.
-     * @param {Patient} patient - Patient to update.
-     * @param {string} firstname - Firstname of the patient.
-     * @param {string} lastname - Lastname of the patient.
-     * @param {string | number | Date} birthday - Birthday of the patient.
+     * @param {Patient} patient Patient to update.
+     * @param {string} firstname Firstname of the patient.
+     * @param {string} lastname Lastname of the patient.
+     * @param {string | number | Date} birthday Birthday of the patient.
      * @throws Throws an exception if the IDAT is not valid.
      */
     service.updateIDAT = function (patient, firstname, lastname, birthday) {
@@ -147,10 +146,10 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
     /**
      * Creates a new IDAT Object and validates the data.
-     * @param {string} firstname - Firstname of the patient.
-     * @param {string} lastname - Lastname of the patient.
-     * @param {string | number | Date} birthday - Birthday of the patient.
-     * @returns {IDAT} - Validated IDAT.
+     * @param {string} firstname Firstname of the patient.
+     * @param {string} lastname Lastname of the patient.
+     * @param {string | number | Date} birthday Birthday of the patient.
+     * @returns {IDAT} Validated IDAT.
      * @throws Throws an exception if the IDAT is not valid.
      */
     service.createIDAT = function (firstname, lastname, birthday) {
@@ -181,8 +180,8 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
     /**
      * Sets the MDAT of the given patient.
      * If the patient got send or requested, the status will be set to PSEUDONYMIZED.
-     * @param {Patient} patient - Patient to be updated.
-     * @param {string} [mdat=""] - MDAT of the Patient. For now, every Object is valid. Default is an empty object.
+     * @param {Patient} patient Patient to be updated.
+     * @param {string} [mdat=""] MDAT of the Patient as a string. Default is an empty string.
      */
     service.updateMDAT = function (patient, mdat) {
         mdat = mdat ?? "";
@@ -197,10 +196,10 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
     /**
      * Searches patients with the given status.
-     * @param {Map<patientKey, Patient>} patients - Map with the patients.
-     * @param {PatientStatus | PatientStatus[]} patientStatus - Status of the patients to be selected.
-     * @param {patientKey[]} [patientKeys] - Array of patientKeys of the patients to be considered.
-     * @returns {patientKey[]} - Ids of th found patients.
+     * @param {Map<patientKey, Patient>} patients Map with the patients.
+     * @param {PatientStatus | PatientStatus[]} patientStatus Status of the patients to be selected.
+     * @param {patientKey[]} [patientKeys] Array of patientKeys of the patients to be considered.
+     * @returns {patientKey[]} Ids of the found patients.
      */
     service.getPatients = function (patients, patientStatus, patientKeys) {
         if (!Array.isArray(patientStatus))
@@ -219,9 +218,9 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
     /**
      * Stores the given patients.
-     * @param {Map<patientKey, Patient>} patients - Map with the patients.
-     * @param {patientKey[]} [patientKeys=Array.from(patients.keys())] - Array of patientKeys of the patients to be stored.
-     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be send again.
+     * @param {Map<patientKey, Patient>} patients Map with the patients.
+     * @param {patientKey[]} [patientKeys=Array.from(patients.keys())] Array of patientKeys of the patients to be stored. By default every patient in the map will be send.
+     * @param {boolean} [retrySucceeded=false] Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be send again. Default is false.
      * @throws Throws an exception if the pseudonymization server is not available.
      * @throws Throws an exception if the database is not available.
      */
@@ -235,9 +234,9 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
     /**
      * Requests the MDAT of the given patients.
-     * @param {Map<patientKey, Patient>} patients - Map with the patients.
-     * @param {patientKey[]} [patientKeys=Array.from(patients.keys())] - Array of patientKeys of the patients to be searched.
-     * @param {boolean} [retrySucceeded=false] - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be requested again.
+     * @param {Map<patientKey, Patient>} patients Map with the patients.
+     * @param {patientKey[]} [patientKeys=Array.from(patients.keys())] Array of patientKeys of the patients to be searched. By default every patient in the map will be searched.
+     * @param {boolean} [retrySucceeded=false] Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should be requested again. Default is false.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
@@ -252,7 +251,7 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
     /**
      * Depseudonymizes pseudonyms.
      * Returns a map containing the pseudonyms with the corresponding IDAT and an array containing all the pseudonyms without an IDAT.
-     * @param {string | string[]} pseudonyms - Pseudonyms to depseudonymize.
+     * @param {string | string[]} pseudonyms Pseudonyms to depseudonymize.
      * @returns {Promise<{depseudonymized: Map<string, {idat: IDAT; tentative: boolean;}>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
@@ -270,12 +269,12 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
      * If patientKeys is null, every patient in the map will be handled.
      * Patients with status CREATED will be pseudonymized with createPseudonyms.
      * Patients with status CONFLICT will be pseudonymized with resolveConflicts.
-     * Patients with status PSEUDONYMIZED be passed through.
-     * Every other status will be ignored.
-     * @param {Map<patientKey, Patient>} patients - Map with the patients.
-     * @param {patientKey[]} patientKeys - Array of patientKeys of the patients to get pseudonymized.
-     * @param {boolean} includeSucceeded - Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should included.
-     * @returns {Promise<patientKey[]>} - Array with the patientKeys of successful pseudonymized patients.
+     * Patients with status PSEUDONYMIZED will be passed through.
+     * Every other status will be ignored or if includeSucceeded is true will be depending on the callback function pseudonymized or passed through.
+     * @param {Map<patientKey, Patient>} patients Map with the patients.
+     * @param {patientKey[]} patientKeys Array of patientKeys of the patients to get pseudonymized.
+     * @param {boolean} includeSucceeded Indicates if patients with status FOUND, NOT_FOUND, PROCESSED, NOT_PROCESSED should included.
+     * @returns {Promise<patientKey[]>} Array with the patientKeys of successful pseudonymized patients.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
@@ -328,7 +327,7 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
     /**
      * Depseudonymizes the given pseudonyms
-     * @param {string[]} pseudonyms - Pseudonyms to get depseudonymized.
+     * @param {string[]} pseudonyms Pseudonyms to get depseudonymized.
      * @returns {Promise<{depseudonymized: Map<string, {idat: IDAT; tentative: boolean;}>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
@@ -359,8 +358,8 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
     /**
      * Sends patients to the server.
      * The patients must have a pseudonym.
-     * @param {Map<patientKey, Patient>} patients - Map with patients.
-     * @param {patientKey[]} patientKeys - Array of patientKeys of the patients to be send.
+     * @param {Map<patientKey, Patient>} patients Map with patients.
+     * @param {patientKey[]} patientKeys Array of patientKeys of the patients to be send.
      * @throws Throws an exception if the server is not available.
      */
     async function send(patients, patientKeys) {
@@ -407,8 +406,8 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
     /**
      * Requests patients from the server and sets the mdat.
      * The patients must have a pseudonym.
-     * @param {Map<patientKey, Patient>} patients - Map with patients.
-     * @param {patientKey[]} patientKeys - Array of patientKeys of the patients to get searched.
+     * @param {Map<patientKey, Patient>} patients Map with patients.
+     * @param {patientKey[]} patientKeys Array of patientKeys of the patients to get searched.
      * @throws Throws an exception if the server is not available.
      */
     async function request(patients, patientKeys) {
@@ -463,8 +462,8 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
     /**
      * Creates pseudonyms for the given patients.
      * The patients must have the status CREATED.
-     * @param {Map<patientKey, Patient>} patients - Map with patients.
-     * @param {patientKey[]} [patientKeys] - PatientKeys of the patients to get pseudonymized.
+     * @param {Map<patientKey, Patient>} patients Map with patients.
+     * @param {patientKey[]} [patientKeys] PatientKeys of the patients to get pseudonymized.
      * @returns {Promise<{pseudonymized: patientKey[]; conflicts: patientKey[];}>} Arrays of keys that got pseudonymized have a conflict.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
@@ -497,8 +496,8 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
     /**
      * Resolves conflicts of patients.
      * The patients must have a conflict.
-     * @param {Map<patientKey, Patient>} patients - Map with patients.
-     * @param {patientKey[]} patientKeys - PatientKeys of the patients with conflicts to resolve.
+     * @param {Map<patientKey, Patient>} patients Map with patients.
+     * @param {patientKey[]} patientKeys PatientKeys of the patients with conflicts to resolve.
      * @returns {Promise<{pseudonymized: patientKey[]; conflicts: patientKey[];}>} PatientKeys of the patients that got pseudonymized and that new conflicts
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
@@ -537,7 +536,7 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
      * Creates the given amount of pseudonymization urls.
      * One url contains one token and can be used for the pseudonymization of one patient.
      * The URL gets invalid after some time specified in the Mainzelliste configuration.
-     * @param {number} amount - Amount of requested pseudonymization urls.
+     * @param {number} amount Amount of requested pseudonymization urls.
      * @returns {Promise<{useCallback: boolean; urlTokens: string[];}>} Array containing the urls.
      * @throws Throws an exception if the server is not available.
      */
@@ -569,7 +568,7 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
      * Returns the url and a list containing all invalid pseudonyms
      * that can't get depseudonymized with the returned url.
      * Duplicated pseudonyms will be removed.
-     * @param {string[]} pseudonyms - Pseudonyms to depseudonymize.
+     * @param {string[]} pseudonyms Pseudonyms to depseudonymize.
      * @returns {Promise<{url: string; invalidPseudonyms: string[];}>} URL for the depseudonymization and all invalid pseudonyms.
      * @throws Throws an exception if the server is not available.
      */
@@ -600,14 +599,11 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
      * The requestURL can be crated with getPseudonymizationURL.
      * Sets the status to the result of the pseudonymization.
      * If a conflict with the IDAT occurs, the tokenURL will be set.
-     * @param {Patient} patient - Patient to get pseudonymized.
+     * @param {Patient} patient Patient to get pseudonymized.
      * @returns {Promise<boolean>} Returns whether the pseudonymization was successful or not.
      * @throws Throws an exception if the Mainzelliste is not available.
      */
     async function getPseudonym(patient) {
-
-        // This is important!
-        // --------------------
         let birthDay = (patient.idat.birthday.getDate()).toString();
         let birthMonth = (patient.idat.birthday.getMonth() + 1).toString();
 
@@ -616,7 +612,6 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
         if (birthMonth.length === 1)
             birthMonth = "0" + birthMonth;
-        // --------------------
 
         const requestBody = "vorname=" + patient.idat.firstname +
             "&nachname=" + patient.idat.lastname +
@@ -626,8 +621,7 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
             "&geburtsname=" +
             "&plz=" +
             "&ort=" +
-            "&sureness=" + patient.sureness.toString() +
-            "&anlegen=%2BPID%2Banfordern%2B";
+            "&sureness=" + patient.sureness.toString();
 
         const options = {
             method: 'POST',
@@ -657,8 +651,6 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
             case 400:
                 // IDAT is invalid
-                // This case should never be true.
-                // Invalid IDAT should be detected by createIDAT.
                 patient.status = PatientStatus.IDAT_INVALID;
                 patient.tokenURL = requestURL;
                 console.error(await response.text());
@@ -686,7 +678,7 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
     /**
      * Requests the IDAT of the patients associated with the token contained in the requestURL.
-     * @param {string} requestURL - URL for the depseudonymization.
+     * @param {string} requestURL URL for the depseudonymization.
      * @returns {Promise<DepseudonymizationResponse[]>} Response from the Mainzelliste.
      * @throws Throws an exception if the Mainzelliste is not available.
      */

@@ -37,13 +37,9 @@ import de.wwu.imi.pseudonym.handler.model.PseudonymizationUrlResponse;
 import de.wwu.imi.pseudonym.handler.services.PseudonymManager;
 
 /**
- * Controller that can talk to the Mainzelliste service. Its main purpose is to
- * get a URL from the Mainzelliste that contains session and query tokens and is
- * ready to be used to pseudonymize a patient.
- *
- * That way the pii (personally identifiable information) doesn't have to be
- * sent to this controller and instead the client can do the pseudonymization
- * themselves by sending the pii to the mainzelliste URL mentioned above.
+ * Abstract controller for pseudonymization handling. Handles tokening with the
+ * Mainzelliste and accepts incoming patient data. The request path is
+ * configurable with the pseudonym-handler.request-path parameter.
  *
  * @see <a href=
  *      "https://bitbucket.org/medicalinformatics/mainzelliste/src/master/">Mainzelliste
@@ -97,17 +93,17 @@ public abstract class AbstractPseudonymizationController {
 	private String serverUrl;
 
 	/**
-	 * Determines if the callback function of the mainzelliste should be used.
+	 * Specifies whether the callback function of the Mainzelliste should be used.
 	 */
 	@Value("${pseudonym-handler.useCallback:false}")
 	private boolean useCallback;
 
 	@Autowired
-	PseudonymManager pseudonymManager;
+	private PseudonymManager pseudonymManager;
 
 	/**
-	 * Handles the tokening with the Mainzelliste and returns an Array of urls
-	 * containing the token.
+	 * Request addPatient tokens from the Mainzelliste. Returns the requested amount
+	 * of urls.
 	 *
 	 * @param amount Amount of requested addPatient token.
 	 * @return PseudonymizationUrlResponse containing the array of urls for
@@ -117,8 +113,8 @@ public abstract class AbstractPseudonymizationController {
 	public final PseudonymizationUrlResponse getPseudonymizationUrl(@RequestBody final int amount) {
 		LOGGER.info("Requesting " + amount + " 'addPatient' tokens");
 
-		HttpClient httpClient = HttpClientBuilder.create().build();
-		String sessionURL = getSessionUrl(httpClient);
+		final HttpClient httpClient = HttpClientBuilder.create().build();
+		final String sessionURL = getSessionUrl(httpClient);
 
 		final String[] urlTokens = new String[amount];
 		for (int i = 0; i < amount; i++) {
@@ -157,13 +153,15 @@ public abstract class AbstractPseudonymizationController {
 	}
 
 	/**
-	 * Accepts a list of patients to be handled by the application.
+	 * Accepts a list of patients to be handled by the application. If the callback
+	 * function is active, the pseudonym of the patient has to be replaced with the
+	 * token used for the pseudonymization.
 	 *
 	 * @param patients List of patients.
 	 * @return Key-value-pairs. The Key is either the pseudonym if
 	 *         {@link #useCallback} is false or the token if {@link #useCallback} is
-	 *         true. The value indicates if the corresponding patient got handled by
-	 *         the application.
+	 *         true. The value indicates whether the corresponding patient got
+	 *         handled by the application.
 	 */
 	@PostMapping("/patients/send/mdat")
 	public final Map<String, Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients) {
@@ -206,7 +204,8 @@ public abstract class AbstractPseudonymizationController {
 	}
 
 	/**
-	 * Accepts the callback request from the mainzelliste.
+	 * Accepts the callback request from the mainzelliste. Saves the containing
+	 * token and pseudonym with the pseudonymManager.
 	 *
 	 * @param requestBody Token and pseudonym of the pseudonymization.
 	 */
@@ -217,14 +216,14 @@ public abstract class AbstractPseudonymizationController {
 	}
 
 	/**
-	 * Request the mdat of the given patients. The returned mdat is in the same
-	 * order as the given pseudonyms. If the mdat is not available, an empty String
-	 * will be returned.
+	 * Request the mdat of the given patients. Returns the patients found by the
+	 * application. The ids are either the patients pseudonyms if
+	 * {@link #useCallback} is false or the token used for the pseudonymization if
+	 * {@link #useCallback} is true. The value of {@link #useCallback} gets send to
+	 * the client with the request of the tokens.
 	 *
-	 * @param ids         List of ids of the requsted patients. An id is either a
-	 *                    pseudonym or the token used for the pseudonymization.
-	 * @param useCallback Indicates if the callback function of the mainzelliste
-	 *                    should be used.
+	 * @param ids List containing ids of the requsted patients. An id is either a
+	 *            pseudonym or the token used for the pseudonymization.
 	 * @return Map containing the ids and the corresponding mdat.
 	 */
 	@PostMapping("/patients/request")
@@ -265,7 +264,9 @@ public abstract class AbstractPseudonymizationController {
 	}
 
 	/**
-	 * Abstract method to be implemented in the application.
+	 * Abstract method to be implemented by the application. Accepts a list of
+	 * patients to get handled by the application. Returns an indicator, whether the
+	 * handling was successful.
 	 *
 	 * @param patients List of patients.
 	 * @return Map containing the pseudonym of the patients and a boolean that
@@ -274,7 +275,8 @@ public abstract class AbstractPseudonymizationController {
 	public abstract Map<String, Boolean> acceptPatients(final List<Patient> patients);
 
 	/**
-	 * Abstract method to be implemented in the application.
+	 * Abstract method to be implemented by the application. Takes a List of
+	 * pseudonyms and returns the corresponding patient.
 	 *
 	 * @param pseudonyms List of pseudonyms.
 	 * @return List containing the requested patients.
@@ -282,12 +284,11 @@ public abstract class AbstractPseudonymizationController {
 	public abstract List<Patient> requestPatients(final List<String> pseudonyms);
 
 	/**
-	 * Gets a session url with a valid session token from the pseudonymization
-	 * server with configured baseURL.
+	 * Gets a session url with a valid session token from the Mainzelliste with
+	 * configured baseURL.
 	 *
 	 * @param httpClient A HTTP-Client for the connection.
-	 * @return The session url with a valid session token from the pseudonymization
-	 *         server.
+	 * @return The session url with a valid session token from the Mainzelliste.
 	 */
 	private final String getSessionUrl(final HttpClient httpClient) {
 		LOGGER.debug("Requesting new session url");
@@ -317,13 +318,13 @@ public abstract class AbstractPseudonymizationController {
 	}
 
 	/**
-	 * Gets a query token which allows to add a new patient from the
-	 * pseudonymization server with given sessionURL.
+	 * Gets a query token which allows to add a new patient from the Mainzelliste
+	 * with given sessionURL.
 	 *
 	 * @param sessionUrl A session url with a valid session token from the
-	 *                   pseudonymization server.
+	 *                   Mainzelliste.
 	 * @param httpClient A HTTP-Client for the connection.
-	 * @return The query token from the pseudonymization server.
+	 * @return The query token from the Mainzelliste.
 	 */
 	private final String getAddPatientToken(final String sessionUrl, final HttpClient httpClient) {
 		final JSONObject body = new JSONObject();
@@ -349,7 +350,7 @@ public abstract class AbstractPseudonymizationController {
 	 * invalid pseudonyms.
 	 *
 	 * @param sessionUrl A session url with a valid session token from the
-	 *                   pseudonymization server.
+	 *                   Mainzelliste.
 	 * @param httpClient A HTTP-Client for the connection.
 	 * @param pseudonyms List of pseudonyms to get depseudonymized.
 	 * @return Pair containing the URL and the invalid pseudonyms.
@@ -427,7 +428,7 @@ public abstract class AbstractPseudonymizationController {
 		LOGGER.debug("Token request: " + body.toString());
 		request.setEntity(new StringEntity(body.toString(), ContentType.APPLICATION_JSON));
 
-		JSONObject jsonResponse;
+		final JSONObject jsonResponse;
 
 		try {
 			final HttpResponse httpResponse = httpClient.execute(request);
