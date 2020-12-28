@@ -1,5 +1,7 @@
 'use strict';
 
+import { PatientStatus, PseudonymizationService } from "./pseudonymizationService.js";
+
 QUnit.config.autostart = false;
 
 var pseudonymizationService;

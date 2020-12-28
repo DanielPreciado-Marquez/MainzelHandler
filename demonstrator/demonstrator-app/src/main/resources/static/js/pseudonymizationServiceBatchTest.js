@@ -1,5 +1,7 @@
 'use strict';
 
+import { PatientStatus, PseudonymizationService } from "./pseudonymizationService.js";
+
 QUnit.config.autostart = false;
 
 var pseudonymizationService;
@@ -13,7 +15,7 @@ QUnit.module('batch-test', () => {
     // TODO: Tests failing because patients have the same pseudonym; i = 11/ 111, 22/ 222, ...
 
     let patients = new Map();
-    const amount = 111;
+    const amount = 10000;
 
     QUnit.test('batch pseudonymization', async assert => {
         assert.expect(amount * 3);
@@ -48,7 +50,7 @@ QUnit.module('batch-test', () => {
     });
 
     QUnit.test('batch depseudonymization', async assert => {
-        assert.expect(amount * 2 + 2);
+        assert.expect(amount * 3 + 2);
 
         const pseudonyms = [];
 
@@ -64,8 +66,10 @@ QUnit.module('batch-test', () => {
             const pseudonym = patient.pseudonym;
 
             assert.true(depseudonymized.has(pseudonym), "Check pseudonym of patient " + key);
-            const idat = depseudonymized.get(pseudonym);
+            const idat = depseudonymized.get(pseudonym).idat;
+            const tentative = depseudonymized.get(pseudonym).tentative;
             assert.deepEqual(idat, patient.idat, "Check IDAT of patient " + key);
+            assert.strictEqual(tentative, true, "Check tentative of patient " + key);
         }
     });
 });

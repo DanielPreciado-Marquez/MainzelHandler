@@ -1,5 +1,7 @@
 'use strict';
 
+import { PatientStatus, PseudonymizationService } from "./pseudonymizationService.js";
+
 /**
  * @type {Map<patientKey, Patient>}
  */

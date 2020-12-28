@@ -1,5 +1,7 @@
 'use strict'
 
+import { PseudonymizationService } from "./pseudonymizationService.js";
+
 var pseudonyms = [];
 var pseudonymizationService;
 
@@ -43,7 +45,8 @@ function updateList(depseudonymized, invalid) {
         const listElement = document.createElement('li');
 
         if (depseudonymized.has(pseudonym)) {
-            listElement.appendChild(document.createTextNode("key: " + key + ", pseudonym: " + pseudonym + ", IDAT: " + JSON.stringify(depseudonymized.get(pseudonym))));
+            const result = depseudonymized.get(pseudonym);
+            listElement.appendChild(document.createTextNode("key: " + key + ", pseudonym: " + pseudonym + ", IDAT: " + JSON.stringify(result.idat) + ", tentative: " + result.tentative));
         } else if (invalid.includes(pseudonym)) {
             listElement.appendChild(document.createTextNode("key: " + key + ", pseudonym: " + pseudonym + ", Nicht gefunden"));
         } else {

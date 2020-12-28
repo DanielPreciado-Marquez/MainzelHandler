@@ -14,12 +14,24 @@ public class Patient {
 	 */
 	private String mdat;
 
+	/**
+	 * Indicates whether the patient could be merged with another patient. This
+	 * occurs when the sureness parameter of the pseudonymization was set to true.
+	 */
+	private boolean tentative;
+
 	public Patient() {
 	}
 
 	public Patient(final String pseudonym, final String mdat) {
 		this.pseudonym = pseudonym;
 		this.mdat = mdat;
+	}
+
+	public Patient(final String pseudonym, final String mdat, final boolean tentative) {
+		this.pseudonym = pseudonym;
+		this.mdat = mdat;
+		this.tentative = tentative;
 	}
 
 	public String getPseudonym() {
@@ -36,6 +48,14 @@ public class Patient {
 
 	public void setMdat(final String mdat) {
 		this.mdat = mdat;
+	}
+
+	public boolean isTentative() {
+		return tentative;
+	}
+
+	public void setTentative(final boolean tentative) {
+		this.tentative = tentative;
 	}
 
 	/**
@@ -61,7 +81,7 @@ public class Patient {
 
 	@Override
 	public String toString() {
-		return "pseudonym: " + pseudonym + ", mdat: " + mdat;
+		return "pseudonym: " + pseudonym + ", tentative: " + tentative + ", mdat: " + mdat;
 	}
 
 }
