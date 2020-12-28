@@ -7,10 +7,10 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import de.wwu.imi.pseudonymizer.lib.PseudonymizationLibConfig;
+import de.wwu.imi.pseudonym.handler.PseudonymHandlerConfig;
 
 @SpringBootApplication
-@Import(PseudonymizationLibConfig.class)
+@Import(PseudonymHandlerConfig.class)
 @EntityScan("de.wwu.imi.demonstrator.app.entities")
 @EnableJpaRepositories
 @ComponentScan("de.wwu.imi.demonstrator.app.controller")

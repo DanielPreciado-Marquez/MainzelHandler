@@ -1,16 +1,16 @@
 'use strict';
 
-import { PatientStatus, PseudonymizationService } from "./pseudonymizationService.js";
+import { PatientStatus, PseudonymHandler } from "./pseudonymHandler.js";
 
 /**
  * @type {Map<patientKey, Patient>}
  */
 var patients = new Map();
 var nextKey = 0;
-var pseudonymizationService;
+var pseudonymHandler;
 
 window.onload = function () {
-    pseudonymizationService = new PseudonymizationService(contextPath + requestPath);
+    pseudonymHandler = new PseudonymHandler(contextPath + requestPath);
 
     updateList();
 
@@ -26,9 +26,9 @@ function createPatient() {
     try {
         if (key !== "" && patients.has(key)) {
             const patient = patients.get(key);
-            pseudonymizationService.updateIDAT(patient, patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
+            pseudonymHandler.updateIDAT(patient, patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
         } else {
-            const patient = pseudonymizationService.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
+            const patient = pseudonymHandler.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
             patients.set(nextKey++, patient);
         }
 
@@ -49,7 +49,7 @@ async function updatePseudonyms() {
     document.getElementById("server-error").innerHTML = "";
 
     try {
-        await pseudonymizationService.requestPatients(patients);
+        await pseudonymHandler.requestPatients(patients);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error.message;
     }
@@ -162,7 +162,7 @@ function addRetryButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymizationService.requestPatients(patients, [key]);
+            await pseudonymHandler.requestPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error.message;
         }
@@ -181,7 +181,7 @@ function addSearchButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymizationService.requestPatients(patients, [key]);
+            await pseudonymHandler.requestPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error.message;
         }
