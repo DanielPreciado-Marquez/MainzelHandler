@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="de" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
@@ -14,7 +14,7 @@
 
         <h2>Erstelle einen Patienten</h2>
         <form id="patient-form">
-            <label for="key-input">Key:</label><br>
+            <label for="key-input">Schlüssel:</label><br>
             <input type="number" id="key-input"><br>
 
             <label for="firstname-input">Vorname:</label><br>
@@ -26,6 +26,9 @@
             <label for="birthday-input">Geburtstag:</label><br>
             <input id="birthday-input" type="date"><br>
 
+            <label for="mdat-input">Medizinische Daten:</label><br>
+            <input id="mdat-input" type="text"><br>
+
             <input type="button" id="add-patient" value="Hinzufügen">
             <p id="idat-error" style="color: red;"></p>
         </form>
@@ -35,7 +38,7 @@
             <ul id="patient-list"></ul>
         </div>
 
-        <button type="submit" id="pseudonym-button">store all</button>
+        <button type="submit" id="pseudonym-button">Alle speichern</button>
 
         <p id="server-error" style="color: red;"></p>
     </div>
