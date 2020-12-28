@@ -69,14 +69,14 @@ function updateList() {
 
         switch (patient.status) {
             case PatientStatus.CREATED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Ausstehend, patient: " + JSON.stringify(patient.idat)));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Ausstehend, Patient: " + JSON.stringify(patient.idat)));
                 addSearchButton(key, listElement);
                 addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
 
             case PatientStatus.PSEUDONYMIZED:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Pseudonymisiert, patient: " + JSON.stringify(patient.idat) + ", pseudonym: " + patient.pseudonym));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Pseudonymisiert, Patient: " + JSON.stringify(patient.idat) + ", Pseudonym: " + patient.pseudonym));
                 addSearchButton(key, listElement);
                 addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
@@ -85,19 +85,19 @@ function updateList() {
             case PatientStatus.IDAT_CONFLICT:
             case PatientStatus.TOKEN_INVALID:
             case PatientStatus.IDAT_INVALID:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Konflikt, patient: " + JSON.stringify(patient.idat) + ", conflict: " + patient.status));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Konflikt, Patient: " + JSON.stringify(patient.idat) + ", Konflikt: " + patient.status));
                 addRetryButton(key, listElement);
                 addEditButton(key, listElement);
                 addDeleteButton(key, listElement);
                 break;
 
             case PatientStatus.FOUND:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Gefunden, patient: " + JSON.stringify(patient.idat) + ", mdat:" + patient.mdat));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Gefunden, Patient: " + JSON.stringify(patient.idat) + ", MDAT:" + patient.mdat));
                 addDeleteButton(key, listElement);
                 break;
 
             case PatientStatus.NOT_FOUND:
-                listElement.appendChild(document.createTextNode("key: " + key + ", status: Nicht Gefunden, patient: " + JSON.stringify(patient.idat)));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Nicht Gefunden, Patient: " + JSON.stringify(patient.idat)));
                 addDeleteButton(key, listElement);
                 break;
 
@@ -115,7 +115,7 @@ function updateList() {
 
 function addDeleteButton(key, listElement) {
     const deleteButton = document.createElement("button");
-    deleteButton.innerText = "delete";
+    deleteButton.innerText = "Löschen";
 
     deleteButton.addEventListener("click", () => {
         patients.delete(key);
@@ -126,7 +126,7 @@ function addDeleteButton(key, listElement) {
 
 function addEditButton(key, listElement) {
     const editButton = document.createElement("button");
-    editButton.innerText = "edit";
+    editButton.innerText = "Bearbeiten";
 
     const patient = patients.get(key);
 
@@ -156,7 +156,7 @@ function addEditButton(key, listElement) {
 
 function addRetryButton(key, listElement) {
     const retryButton = document.createElement("button");
-    retryButton.innerText = "retry";
+    retryButton.innerText = "Wiederholen";
 
     retryButton.addEventListener("click", async () => {
         document.getElementById("server-error").innerHTML = "";
@@ -175,7 +175,7 @@ function addRetryButton(key, listElement) {
 
 function addSearchButton(key, listElement) {
     const pseuButton = document.createElement("button");
-    pseuButton.innerText = "Suche";
+    pseuButton.innerText = "Suchen";
 
     pseuButton.addEventListener("click", async () => {
         document.getElementById("server-error").innerHTML = "";

@@ -46,11 +46,11 @@ function updateList(depseudonymized, invalid) {
 
         if (depseudonymized.has(pseudonym)) {
             const result = depseudonymized.get(pseudonym);
-            listElement.appendChild(document.createTextNode("key: " + key + ", pseudonym: " + pseudonym + ", IDAT: " + JSON.stringify(result.idat) + ", tentative: " + result.tentative));
+            listElement.appendChild(document.createTextNode("key: " + key + ", Pseudonym: " + pseudonym + ", IDAT: " + JSON.stringify(result.idat) + ", tentative: " + result.tentative));
         } else if (invalid.includes(pseudonym)) {
-            listElement.appendChild(document.createTextNode("key: " + key + ", pseudonym: " + pseudonym + ", Nicht gefunden"));
+            listElement.appendChild(document.createTextNode("key: " + key + ", Pseudonym: " + pseudonym + ", Nicht gefunden"));
         } else {
-            listElement.appendChild(document.createTextNode("key: " + key + ", pseudonym: " + pseudonym + ", Nicht angefragt"));
+            listElement.appendChild(document.createTextNode("key: " + key + ", Pseudonym: " + pseudonym + ", Nicht angefragt"));
         }
 
         addDeleteButton(key, listElement);
