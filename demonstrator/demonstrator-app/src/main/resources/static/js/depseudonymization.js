@@ -1,12 +1,12 @@
 'use strict'
 
-import { PseudonymizationService } from "./pseudonymizationService.js";
+import { PseudonymHandler } from "./pseudonymHandler.js";
 
 var pseudonyms = [];
-var pseudonymizationService;
+var pseudonymHandler;
 
 window.onload = function () {
-    pseudonymizationService = new PseudonymizationService(contextPath + requestPath);
+    pseudonymHandler = new PseudonymHandler(contextPath + requestPath);
 
     updateList();
 
@@ -26,7 +26,7 @@ async function updatePseudonyms() {
     document.getElementById("server-error").innerHTML = "";
 
     try {
-        const { depseudonymized, invalid } = await pseudonymizationService.depseudonymize(pseudonyms);
+        const { depseudonymized, invalid } = await pseudonymHandler.depseudonymize(pseudonyms);
         updateList(depseudonymized, invalid);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error.message;
@@ -46,11 +46,11 @@ function updateList(depseudonymized, invalid) {
 
         if (depseudonymized.has(pseudonym)) {
             const result = depseudonymized.get(pseudonym);
-            listElement.appendChild(document.createTextNode("key: " + key + ", pseudonym: " + pseudonym + ", IDAT: " + JSON.stringify(result.idat) + ", tentative: " + result.tentative));
+            listElement.appendChild(document.createTextNode("key: " + key + ", Pseudonym: " + pseudonym + ", IDAT: " + JSON.stringify(result.idat) + ", tentative: " + result.tentative));
         } else if (invalid.includes(pseudonym)) {
-            listElement.appendChild(document.createTextNode("key: " + key + ", pseudonym: " + pseudonym + ", Nicht gefunden"));
+            listElement.appendChild(document.createTextNode("key: " + key + ", Pseudonym: " + pseudonym + ", Nicht gefunden"));
         } else {
-            listElement.appendChild(document.createTextNode("key: " + key + ", pseudonym: " + pseudonym + ", Nicht angefragt"));
+            listElement.appendChild(document.createTextNode("key: " + key + ", Pseudonym: " + pseudonym + ", Nicht angefragt"));
         }
 
         addDeleteButton(key, listElement);

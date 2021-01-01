@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import de.wwu.imi.demonstrator.app.entities.PatientEntity;
 import de.wwu.imi.demonstrator.app.repositories.PatientRepository;
-import de.wwu.imi.pseudonymizer.lib.controller.AbstractPseudonymizationController;
-import de.wwu.imi.pseudonymizer.lib.model.Patient;
+import de.wwu.imi.pseudonym.handler.controller.AbstractPseudonymizationController;
+import de.wwu.imi.pseudonym.handler.model.Patient;
 
 @RestController
 @CrossOrigin
