@@ -305,14 +305,18 @@ public abstract class AbstractPseudonymizationController {
 			final HttpResponse httpResponse = httpClient.execute(request);
 			final InputStream connectionResponse = httpResponse.getEntity().getContent();
 			final String response = IOUtils.toString(connectionResponse, StandardCharsets.UTF_8);
+			LOGGER.debug(response);
 			jsonResponse = new JSONObject(response);
 		} catch (Exception exception) {
 			LOGGER.error("Error while connecting to Mainzelliste: " + exception.getLocalizedMessage(), exception);
 			throw new MainzellisteConnectionException(exception.getLocalizedMessage(), exception);
 		}
 
-		final String uri = jsonResponse.getString("uri");
+		LOGGER.debug(jsonResponse.toString());
+		//final String uri = jsonResponse.getString("uri");
+		final String uri = mainzellisteUrl + "/sessions/" + jsonResponse.getString("sessionId") + "/" ;
 		LOGGER.debug("Session url: " + uri);
+		LOGGER.debug("Mainzelliste url: " + uri);
 
 		return uri;
 	}

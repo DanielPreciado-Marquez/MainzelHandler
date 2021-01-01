@@ -1,13 +1,33 @@
 version: '3.8'
 
+networks:
+    demonstrator-network:
+
 services:
     demonstrator-db:
-        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-db:0.0.1-snapshot
+        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-db:1.0.2
         build:
             context: ./demonstrator-db/
         container_name: demonstrator-db
         restart: always
         ports:
             - "3306:3306"
+        networks:
+            - demonstrator-network
         volumes:
             - ./volumes/demonstrator-db/data:/var/lib/mysql
+    demonstrator-app:
+        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-app:1.0.2
+        build:
+            context: ./demonstrator-app/
+        container_name: demonstrator-app
+        restart: always
+        ports:
+            - "8081:8081"
+            - "8082:8082"
+        networks:
+            - demonstrator-network
+        environment:
+            - SPRING_DATASOURCE_URL=jdbc:mysql://demonstrator-db/demonstrator_db
+        depends_on:
+            - demonstrator-db

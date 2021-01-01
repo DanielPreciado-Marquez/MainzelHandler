@@ -1,17 +1,23 @@
 pseudonym-handler:
   mainzelliste:
-    # url: https://zbb-mfm-dev.uni-muenster.de/mainzelliste/
-    url: http://localhost:8080/
+    url: http://host.docker.internal:8080/
     api:
       key: 123BachelorArbeit321
       version: 3.0
   pseudonym-timeout: 600000
   request-path: /api
-  url: http://host.docker.internal # 78.94.210.119
+  url: http://host.docker.internal
   useCallback: false
 
+logging:
+  level:
+    root: INFO
+  de:
+    wwu:
+      imi: DEBUG
+
 server:
-  port: 8082
+  port: 8081
   servlet:
     context-path: /demonstrator
   # ssl:
