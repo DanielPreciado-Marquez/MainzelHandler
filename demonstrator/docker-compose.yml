@@ -5,7 +5,7 @@ networks:
 
 services:
     demonstrator-db:
-        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-db:1.0.2
+        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-db:1.0.3
         build:
             context: ./demonstrator-db/
         container_name: demonstrator-db
@@ -17,7 +17,7 @@ services:
         volumes:
             - ./volumes/demonstrator-db/data:/var/lib/mysql
     demonstrator-app:
-        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-app:1.0.2
+        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-app:1.0.3
         build:
             context: ./demonstrator-app/
         container_name: demonstrator-app

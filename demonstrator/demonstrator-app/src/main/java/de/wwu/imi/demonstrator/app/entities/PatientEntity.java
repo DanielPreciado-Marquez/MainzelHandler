@@ -5,7 +5,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
-import de.wwu.imi.pseudonym.handler.model.Patient;
+import de.wwu.imi.pseudonym.handler.core.model.Patient;
 
 @Entity
 @Table(name = "patient")

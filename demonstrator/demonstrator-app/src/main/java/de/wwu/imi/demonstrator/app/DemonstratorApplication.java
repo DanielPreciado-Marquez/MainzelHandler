@@ -7,7 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import de.wwu.imi.pseudonym.handler.PseudonymHandlerConfig;
+import de.wwu.imi.pseudonym.handler.spring.PseudonymHandlerConfig;
 
 @SpringBootApplication
 @Import(PseudonymHandlerConfig.class)

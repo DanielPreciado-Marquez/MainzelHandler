@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import de.wwu.imi.demonstrator.app.entities.PatientEntity;
 import de.wwu.imi.demonstrator.app.repositories.PatientRepository;
-import de.wwu.imi.pseudonym.handler.controller.AbstractPseudonymizationController;
-import de.wwu.imi.pseudonym.handler.model.Patient;
+import de.wwu.imi.pseudonym.handler.core.model.Patient;
+import de.wwu.imi.pseudonym.handler.spring.controller.AbstractPatientController;
 
 @RestController
 @CrossOrigin
-public class PatientController extends AbstractPseudonymizationController {
+public class PatientController extends AbstractPatientController {
 
 	private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PatientController.class);
 
