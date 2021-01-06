@@ -1,6 +1,6 @@
 pseudonym-handler:
   mainzelliste:
-    url: http://host.docker.internal:8080/
+    url: http://host.docker.internal:8080
     api:
       key: 123BachelorArbeit321
       version: 3.0
