@@ -82,7 +82,7 @@ public class MainzellisteConnection {
 	 * @return The session url with a valid session token from the Mainzelliste.
 	 */
 	public MainzellisteSession createMainzellisteSession(final HttpClient httpClient) {
-		LOGGER.debug("Requesting new session url");
+		LOGGER.debug("Creating new session");
 
 		final String connectionUrl = url + "/sessions";
 
@@ -105,9 +105,6 @@ public class MainzellisteConnection {
 		final String sessionId = jsonResponse.getString("sessionId");
 		LOGGER.debug("Created Session with sessionId " + sessionId);
 
-		final String uri = url + "/sessions/" + jsonResponse.getString("sessionId");
-		LOGGER.debug("Session url: " + uri);
-		LOGGER.debug("Mainzelliste url: " + uri);
 		return new MainzellisteSession(this, sessionId);
 	}
 

@@ -112,7 +112,6 @@ public class MainzellisteSession {
 
 				if (message.contains("Error occured at Mainzelliste: No patient found with provided pid")) {
 					final String invalidPseudonym = message.split("'")[1];
-					LOGGER.debug("Invalid pseudonym: '" + invalidPseudonym + "'");
 					invalidPseudonyms.add(invalidPseudonym);
 
 					if (pseudonyms.size() != invalidPseudonyms.size())
@@ -123,6 +122,7 @@ public class MainzellisteSession {
 			}
 		}
 
+		LOGGER.info("Tokens created for " + (pseudonyms.size() - invalidPseudonyms.size()) + " pseudonyms");
 		final String urlToken = (token != null) ? mainzellisteConnection.getUrl() + "/patients?tokenId=" + token : "";
 
 		return new DepseudonymizationUrlResponse(urlToken, invalidPseudonyms);
@@ -176,7 +176,6 @@ public class MainzellisteSession {
 		try {
 			final HttpResponse httpResponse = httpClient.execute(request);
 			final int statusCode = httpResponse.getStatusLine().getStatusCode();
-			LOGGER.debug(Integer.toString(statusCode));
 			
 			final InputStream connectionResponse = httpResponse.getEntity().getContent();
 			final String response = IOUtils.toString(connectionResponse, StandardCharsets.UTF_8);
