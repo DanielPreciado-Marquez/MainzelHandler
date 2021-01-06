@@ -5,18 +5,23 @@ import java.util.List;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import de.wwu.imi.pseudonym.handler.core.exceptions.MainzellisteConnectionException;
+import de.wwu.imi.pseudonym.handler.core.exceptions.MainzellisteRuntimeException;
 import de.wwu.imi.pseudonym.handler.core.interfaces.TokenInterface;
+import de.wwu.imi.pseudonym.handler.core.mainzelliste.MainzellisteConnection;
+import de.wwu.imi.pseudonym.handler.core.mainzelliste.MainzellisteSession;
 import de.wwu.imi.pseudonym.handler.core.model.DepseudonymizationUrlResponse;
 import de.wwu.imi.pseudonym.handler.core.model.PseudonymizationUrlResponse;
-import de.wwu.imi.pseudonym.handler.core.services.MainzellisteConnection;
-import de.wwu.imi.pseudonym.handler.core.services.MainzellisteSession;
 
-@RequestMapping("${pseudonym-handler.request-path}/tokens")
+@RequestMapping("${pseudonym-handler.request-path:}/tokens")
 @RestController
 public class TokenController implements TokenInterface {
 
@@ -27,7 +32,7 @@ public class TokenController implements TokenInterface {
 			@Value("${pseudonym-handler.mainzelliste.api.version:3.0}") final String mainzellisteApiVersion,
 			@Value("${server.port}") final String serverPort,
 			@Value("${server.servlet.context-path}") final String contextPath,
-			@Value("${pseudonym-handler.request-path}") final String requestPath,
+			@Value("${pseudonym-handler.request-path:}") final String requestPath,
 			@Value("${pseudonym-handler.url}") final String serverUrl,
 			@Value("${pseudonym-handler.useCallback:false}") final boolean useCallback) {
 
@@ -68,6 +73,11 @@ public class TokenController implements TokenInterface {
 		final HttpClient httpClient = HttpClientBuilder.create().build();
 		final MainzellisteSession session = mainzellisteConnection.createMainzellisteSession(httpClient);
 		return session.createReadPatientsToken(httpClient, pseudonyms);
+	}
+
+	@ExceptionHandler({ MainzellisteRuntimeException.class, MainzellisteConnectionException.class })
+	public final ResponseEntity<Object> handlePseudonymizationServerException(final Exception exception) {
+		return new ResponseEntity<>(exception.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
 	}
 
 }

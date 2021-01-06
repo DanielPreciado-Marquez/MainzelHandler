@@ -34,7 +34,8 @@
 
 <script type="text/javascript" th:inline="javascript">
     const contextPath = /*[[${@environment.getProperty('server.servlet.context-path')}]]*/ '/';
-    const requestPath = /*[[${@environment.getProperty('pseudonym-handler.request-path')}]]*/ '/';
+    let requestPath = /*[[${@environment.getProperty('pseudonym-handler.request-path')}]]*/ '/';
+    requestPath ??= "";
 </script>
 
 </html>

@@ -19,7 +19,7 @@ import de.wwu.imi.pseudonym.handler.core.interfaces.PatientInterface;
 import de.wwu.imi.pseudonym.handler.core.model.Patient;
 import de.wwu.imi.pseudonym.handler.spring.services.PseudonymManagerSpring;
 
-@RequestMapping("${pseudonym-handler.request-path}/patients")
+@RequestMapping("${pseudonym-handler.request-path:}/patients")
 public abstract class AbstractPatientController implements PatientInterface {
 
 	private static final Logger LOGGER = org.slf4j.LoggerFactory.getLogger(AbstractPatientController.class);
