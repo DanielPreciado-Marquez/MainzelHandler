@@ -1,4 +1,4 @@
-package de.wwu.imi.pseudonym.handler.core.services;
+package de.wwu.imi.pseudonym.handler.core.mainzelliste;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -82,13 +84,13 @@ public class MainzellisteConnection {
 	public MainzellisteSession createMainzellisteSession(final HttpClient httpClient) {
 		LOGGER.debug("Requesting new session url");
 
-		final String connectionUrl = url + "sessions/";
+		final String connectionUrl = url + "/sessions";
 
 		final HttpPost request = new HttpPost(connectionUrl);
 		request.addHeader("mainzellisteApiKey", apiKey);
 		request.addHeader("mainzellisteApiVersion", apiVersion);
 
-		JSONObject jsonResponse;
+		final JSONObject jsonResponse;
 
 		try {
 			final HttpResponse httpResponse = httpClient.execute(request);
@@ -101,11 +103,63 @@ public class MainzellisteConnection {
 		}
 
 		final String sessionId = jsonResponse.getString("sessionId");
-		// final String uri = jsonResponse.getString("uri");
-		final String uri = url + "/sessions/" + jsonResponse.getString("sessionId") + "/";
+		LOGGER.debug("Created Session with sessionId " + sessionId);
+
+		final String uri = url + "/sessions/" + jsonResponse.getString("sessionId");
 		LOGGER.debug("Session url: " + uri);
 		LOGGER.debug("Mainzelliste url: " + uri);
 		return new MainzellisteSession(this, sessionId);
+	}
+
+	public JSONObject getMainzellisteSession(final HttpClient httpClient,
+			final MainzellisteSession mainzellisteSession) {
+		LOGGER.debug("Getting Mainzelliste session: " + mainzellisteSession.getSessionId());
+
+		final HttpGet request = new HttpGet(mainzellisteSession.getSessionUrl());
+		request.addHeader("accept", "application/json");
+		request.addHeader("mainzellisteApiVersion", apiVersion);
+		
+		final JSONObject jsonResponse;
+
+		try {
+			final HttpResponse httpResponse = httpClient.execute(request);
+			final int statusCode = httpResponse.getStatusLine().getStatusCode();
+
+			if (statusCode == 200) {
+				final InputStream responseContent = httpResponse.getEntity().getContent();
+				final String response = IOUtils.toString(responseContent, StandardCharsets.UTF_8);
+				jsonResponse = new JSONObject(response);
+			} else {
+				jsonResponse = null;
+			}
+		} catch (Exception exception) {
+			LOGGER.error("Error while connecting to Mainzelliste: " + exception.getLocalizedMessage(), exception);
+			throw new MainzellisteConnectionException(exception.getLocalizedMessage(), exception);
+		}
+
+		return jsonResponse;
+	}
+
+	public void deleteMainzellisteSession(final HttpClient httpClient, final MainzellisteSession mainzellisteSession) {
+		LOGGER.debug("Deleting Mainzelliste session: " + mainzellisteSession.getSessionId());
+
+		final HttpDelete request = new HttpDelete(mainzellisteSession.getSessionUrl());
+		request.addHeader("mainzellisteApiVersion", apiVersion);
+
+		try {
+			final HttpResponse httpResponse = httpClient.execute(request);
+			final int statusCode = httpResponse.getStatusLine().getStatusCode();
+
+			if (statusCode != 204) {
+				LOGGER.error("Error while deleting MainzellisteSession with seesionId "
+						+ mainzellisteSession.getSessionId());
+				throw new MainzellisteConnectionException("Error while deleting MainzellisteSession with seesionId "
+						+ mainzellisteSession.getSessionId());
+			}
+		} catch (Exception exception) {
+			LOGGER.error("Error while connecting to Mainzelliste: " + exception.getLocalizedMessage(), exception);
+			throw new MainzellisteConnectionException(exception.getLocalizedMessage(), exception);
+		}
 	}
 
 }

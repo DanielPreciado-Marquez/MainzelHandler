@@ -1,4 +1,4 @@
-package de.wwu.imi.pseudonym.handler.core.services;
+package de.wwu.imi.pseudonym.handler.core.mainzelliste;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +39,7 @@ public class MainzellisteSession {
 	}
 
 	public String getSessionUrl() {
-		return mainzellisteConnection.getUrl() + "/sessions/" + sessionId + "/";
+		return mainzellisteConnection.getUrl() + "/sessions/" + sessionId;
 	}
 
 	/**
@@ -55,7 +55,7 @@ public class MainzellisteSession {
 
 		final String[] urlTokens = new String[amount];
 		for (int i = 0; i < amount; i++) {
-			urlTokens[i] = mainzellisteConnection.getUrl() + "patients?tokenId=" + createAddPatientToken(httpClient);
+			urlTokens[i] = mainzellisteConnection.getUrl() + "/patients?tokenId=" + createAddPatientToken(httpClient);
 		}
 
 		LOGGER.info("Tokens created: " + urlTokens.length);
@@ -123,7 +123,7 @@ public class MainzellisteSession {
 			}
 		}
 
-		final String urlToken = (token != null) ? mainzellisteConnection.getUrl() + "patients?tokenId=" + token : "";
+		final String urlToken = (token != null) ? mainzellisteConnection.getUrl() + "/patients?tokenId=" + token : "";
 
 		return new DepseudonymizationUrlResponse(urlToken, invalidPseudonyms);
 	}
@@ -161,7 +161,7 @@ public class MainzellisteSession {
 	 * @return The token.
 	 */
 	private String getToken(final HttpClient httpClient, final JSONObject body) {
-		final String connectionUrl = getSessionUrl() + "tokens/";
+		final String connectionUrl = getSessionUrl() + "/tokens";
 
 		final HttpPost request = new HttpPost(connectionUrl);
 		request.addHeader("content-type", "application/json");
@@ -176,18 +176,18 @@ public class MainzellisteSession {
 		try {
 			final HttpResponse httpResponse = httpClient.execute(request);
 			final int statusCode = httpResponse.getStatusLine().getStatusCode();
-
+			LOGGER.debug(Integer.toString(statusCode));
+			
 			final InputStream connectionResponse = httpResponse.getEntity().getContent();
 			final String response = IOUtils.toString(connectionResponse, StandardCharsets.UTF_8);
 
-			// TODO: more statusCodes?
-			if (statusCode == 400 || statusCode == 500) {
+			if (statusCode == 201) {
+				LOGGER.debug("Recieved token: " + response);
+				jsonResponse = new JSONObject(response);
+			} else {
 				LOGGER.error("Error occured at Mainzelliste: " + response);
 				throw new MainzellisteRuntimeException("Error occured at Mainzelliste: " + response);
 			}
-
-			LOGGER.debug("Recieved token: " + response);
-			jsonResponse = new JSONObject(response);
 		} catch (IOException exception) {
 			LOGGER.error("Error while connecting to Mainzelliste: " + exception.getLocalizedMessage(), exception);
 			throw new MainzellisteConnectionException(exception.getLocalizedMessage(), exception);
