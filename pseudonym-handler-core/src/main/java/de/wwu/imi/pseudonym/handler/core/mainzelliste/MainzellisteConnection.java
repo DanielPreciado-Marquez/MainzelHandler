@@ -115,7 +115,7 @@ public class MainzellisteConnection {
 		final HttpGet request = new HttpGet(mainzellisteSession.getSessionUrl());
 		request.addHeader("accept", "application/json");
 		request.addHeader("mainzellisteApiVersion", apiVersion);
-		
+
 		final JSONObject jsonResponse;
 
 		try {
