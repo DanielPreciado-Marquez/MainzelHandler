@@ -47,7 +47,7 @@ public abstract class AbstractPatientController implements PatientInterface {
 	 *         true. The value indicates whether the corresponding patient got
 	 *         handled by the application.
 	 */
-	@PostMapping("/send/mdat")
+	@PostMapping("/send")
 	public final Map<String, Boolean> acceptPatientsRequest(@RequestBody final List<Patient> patients) {
 		LOGGER.info("Recieved " + patients.size() + " patients");
 		return pseudonymManager.processPatients(patients, this::acceptPatients, useCallback);
