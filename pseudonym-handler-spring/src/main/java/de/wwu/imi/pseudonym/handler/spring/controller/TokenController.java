@@ -1,7 +1,5 @@
 package de.wwu.imi.pseudonym.handler.spring.controller;
 
-import java.util.List;
-
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +16,9 @@ import de.wwu.imi.pseudonym.handler.core.exceptions.MainzellisteRuntimeException
 import de.wwu.imi.pseudonym.handler.core.interfaces.TokenInterface;
 import de.wwu.imi.pseudonym.handler.core.mainzelliste.MainzellisteConnection;
 import de.wwu.imi.pseudonym.handler.core.mainzelliste.MainzellisteSession;
+import de.wwu.imi.pseudonym.handler.core.model.DepseudonymizationUrlRequest;
 import de.wwu.imi.pseudonym.handler.core.model.DepseudonymizationUrlResponse;
+import de.wwu.imi.pseudonym.handler.core.model.PseudonymizationUrlRequest;
 import de.wwu.imi.pseudonym.handler.core.model.PseudonymizationUrlResponse;
 
 @RequestMapping("${pseudonym-handler.request-path:}/tokens")
@@ -52,10 +52,10 @@ public class TokenController implements TokenInterface {
 	 *         pseudonymizations and the value of useCallback.
 	 */
 	@PostMapping("/addPatient")
-	public PseudonymizationUrlResponse getPseudonymizationUrl(@RequestBody final int amount) {
+	public PseudonymizationUrlResponse getPseudonymizationUrl(@RequestBody final PseudonymizationUrlRequest request) {
 		final HttpClient httpClient = HttpClientBuilder.create().build();
 		final MainzellisteSession session = mainzellisteConnection.createMainzellisteSession(httpClient);
-		return session.createAddPatientTokens(httpClient, amount);
+		return session.createAddPatientTokens(httpClient, request.getAmount());
 	}
 
 	/**
@@ -69,10 +69,11 @@ public class TokenController implements TokenInterface {
 	 *         pseudonyms.
 	 */
 	@PostMapping("/readPatients")
-	public DepseudonymizationUrlResponse getDepseudonymizationUrl(@RequestBody final List<String> pseudonyms) {
+	public DepseudonymizationUrlResponse getDepseudonymizationUrl(
+			@RequestBody final DepseudonymizationUrlRequest request) {
 		final HttpClient httpClient = HttpClientBuilder.create().build();
 		final MainzellisteSession session = mainzellisteConnection.createMainzellisteSession(httpClient);
-		return session.createReadPatientsToken(httpClient, pseudonyms);
+		return session.createReadPatientsToken(httpClient, request.getPseudonyms(), request.getResultFields());
 	}
 
 	@ExceptionHandler({ MainzellisteRuntimeException.class, MainzellisteConnectionException.class })
