@@ -4,9 +4,6 @@
  * The IDAT of a patient.
  * Stores the identifying data.
  * @typedef {Object} IDAT
- * @property {string} firstname Firstname of the patient.
- * @property {string} lastname Lastname of the patient.
- * @property {Date} birthday Birthday of the patient.
  */
 
 /**
@@ -69,32 +66,37 @@ const PatientStatus = Object.freeze({
 });
 
 /**
+ * @typedef {Object} PseudonymHandlerConfig
+ * @property {string} [mainzellisteApiVersion=3.0] Version of the Mainzelliste api to be used. Default is 3.0.
+ * @property {{name: string; type: string; required: boolean; fixMonth: boolean; fixZero: boolean;}[]} idatFields Field definitions of the Maintelliste.
+ * @property {string} serverURL URL of the MDAT server.
+ */
+
+/**
  * This module is used to connect to the configured Pseudonymization service.
  * TODO: Maybe change patient into a class to prevent manuel changing the properties
- * @param {string} serverURL URL of the MDAT server.
- * @param {string} [mainzellisteApiVersion=3.0] Version of the Mainzelliste api to be used. Default is 3.0.
+ * @param {PseudonymHandlerConfig} pseudonymHandlerConfig Configurations.
  */
-function PseudonymHandler(serverURL, mainzellisteApiVersion) {
-    mainzellisteApiVersion = mainzellisteApiVersion ?? "3.0";
+function PseudonymHandler(pseudonymHandlerConfig) {
+    const mainzellisteApiVersion = pseudonymHandlerConfig.mainzellisteApiVersion ?? "3.0";
+    const idatFields = pseudonymHandlerConfig.idatFields;
+    const serverURL = pseudonymHandlerConfig.serverURL;
 
     const service = {};
 
     /**
      * Creates a new Patient.
-     * @param {string} firstname Firstname of the patient.
-     * @param {string} lastname Lastname of the patient.
-     * @param {string | number | Date} birthday Birthday of the patient.
+     * Validates the IDAT.
+     * @param {IDAT} idat IDAT of the patient.
      * @param {string} [mdat=""] MDAT of the Patient as a string. Default is an empty string.
      * @returns {Patient} The patient.
      * @throws Throws an exception if the IDAT is not valid.
      */
-    service.createPatient = function (firstname, lastname, birthday, mdat) {
-
-        const idat = this.createIDAT(firstname, lastname, birthday);
-
-        mdat = mdat ?? "";
+    service.createPatient = function (idat, mdat = "") {
         if (typeof mdat !== 'string')
-            throw new TypeError("Invalid MDAT!");
+            throw new TypeError("MDAT must be of the type 'string'!");
+
+        this.validateIDAT(idat);
 
         const patient = {
             status: PatientStatus.CREATED,
@@ -114,67 +116,71 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
      * Validates Updates the IDAT of the given patient.
      * If the given IDAT is different from the current one and the patient has a pseudonym, the pseudonym well be reset and the status will be set to CREATED.
      * @param {Patient} patient Patient to update.
-     * @param {string} firstname Firstname of the patient.
-     * @param {string} lastname Lastname of the patient.
-     * @param {string | number | Date} birthday Birthday of the patient.
+     * @param {IDAT} idat New IDAT object.
      * @throws Throws an exception if the IDAT is not valid.
      */
-    service.updateIDAT = function (patient, firstname, lastname, birthday) {
-
-        const idat = this.createIDAT(firstname, lastname, birthday);
-
+    service.updateIDAT = function (patient, idat) {
+        this.validateIDAT(idat);
         if (patient.status > 0) {
             for (const key in patient.idat) {
-                let equal = true;
-
-                if (patient.idat[key] instanceof Date) {
-                    equal = (patient.idat[key].getTime() === idat[key].getTime());
-                } else {
-                    equal = (patient.idat[key] === idat[key]);
-                }
-
-                if (!equal) {
+                if (patient.idat[key] !== idat[key]) {
                     patient.pseudonym = null;
                     patient.status = PatientStatus.CREATED;
                     break;
                 }
             }
         }
-
         patient.idat = idat;
     }
 
     /**
      * Creates a new IDAT Object and validates the data.
-     * @param {string} firstname Firstname of the patient.
-     * @param {string} lastname Lastname of the patient.
-     * @param {string | number | Date} birthday Birthday of the patient.
+     * @param {any[]} idatValues Values of the IDAT.
      * @returns {IDAT} Validated IDAT.
      * @throws Throws an exception if the IDAT is not valid.
      */
-    service.createIDAT = function (firstname, lastname, birthday) {
+    service.createIDAT = function (...idatValues) {
+        let idat = {};
 
-        if (typeof firstname !== "string" || firstname.trim() === "")
-            throw new Error("Invalid firstname!");
+        for (let i = 0; i < idatValues.length; i++) {
+            const key = idatFields[i].name;
+            const value = idatValues[i];
+            idat[key] = value;
+        }
 
-        if (typeof lastname !== "string" || lastname.trim() === "")
-            throw new Error("Invalid lastname!");
-
-        if (typeof birthday !== "string" && typeof birthday !== "number" && !(birthday instanceof Date))
-            throw new TypeError("Invalid birthday!");
-
-        birthday = new Date(birthday);
-
-        if (isNaN(birthday) || birthday.getTime() > new Date().getTime())
-            throw new Error("Invalid birthday!");
-
-        const idat = {
-            firstname: firstname.trim(),
-            lastname: lastname.trim(),
-            birthday: birthday
-        };
-
+        this.validateIDAT(idat);
         return idat;
+    }
+
+    /**
+     * Validates an IDAT-Object fulfills the configured requirements.
+     * @param {IDAT} idat Idat to be validated.
+     * @throws Throws an exception if the IDAT is not valid.
+     */
+    service.validateIDAT = function (idat) {
+        for (const field of idatFields) {
+            const key = field.name;
+            const value = idat[key];
+
+            if (value == null) {
+                if (field.required)
+                    throw new Error("Field with name '" + key + "' is not present but required!");
+            }
+            else if (typeof value !== field.type)
+                throw new Error("Field with name '" + key + "' of the type '" + typeof value + "' must be of the type '" + field.type + "'!");
+        }
+
+        for (const key in idat) {
+            let found = false;
+            for (const field of idatFields) {
+                if (key === field.name) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found)
+                throw new Error("Field with name '" + key + "' is no valid idat field!");
+        }
     }
 
     /**
@@ -183,9 +189,7 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
      * @param {Patient} patient Patient to be updated.
      * @param {string} [mdat=""] MDAT of the Patient as a string. Default is an empty string.
      */
-    service.updateMDAT = function (patient, mdat) {
-        mdat = mdat ?? "";
-
+    service.updateMDAT = function (patient, mdat = "") {
         if (patient.mdat !== mdat) {
             patient.mdat = mdat;
 
@@ -252,15 +256,19 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
      * Depseudonymizes pseudonyms.
      * Returns a map containing the pseudonyms with the corresponding IDAT and an array containing all the pseudonyms without an IDAT.
      * @param {string | string[]} pseudonyms Pseudonyms to depseudonymize.
+     * @param {string | string[]} [resultFields] IDAT fields to return. By default, every field will be returned.
      * @returns {Promise<{depseudonymized: Map<string, {idat: IDAT; tentative: boolean;}>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
-    service.depseudonymize = async function (pseudonyms) {
+    service.depseudonymize = async function (pseudonyms, resultFields) {
         if (!Array.isArray(pseudonyms))
             pseudonyms = [pseudonyms];
 
-        const { depseudonymized, invalid } = await handleDepseudonymization(pseudonyms);
+        if (resultFields != null && !Array.isArray(resultFields))
+            resultFields = [resultFields];
+
+        const { depseudonymized, invalid } = await handleDepseudonymization(pseudonyms, resultFields);
         return { depseudonymized, invalid };
     }
 
@@ -328,17 +336,18 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
     /**
      * Depseudonymizes the given pseudonyms
      * @param {string[]} pseudonyms Pseudonyms to get depseudonymized.
+     * @param {string[]} [resultFields] IDAT fields to return. By default, every field will be returned.
      * @returns {Promise<{depseudonymized: Map<string, {idat: IDAT; tentative: boolean;}>; invalid: string[];}>} Pseudonyms with IDAT and invalid pseudonyms.
      * @throws Throws an exception if the Mainzelliste is not available.
      * @throws Throws an exception if the server is not available.
      */
-    async function handleDepseudonymization(pseudonyms) {
+    async function handleDepseudonymization(pseudonyms, resultFields) {
         const depseudonymized = new Map();
 
         if (pseudonyms.length === 0)
             return { depseudonymized, invalid: [] };
 
-        const { url, invalidPseudonyms } = await getDepseudonymizationURL(pseudonyms);
+        const { url, invalidPseudonyms } = await getDepseudonymizationURL(pseudonyms, resultFields);
 
         if (url === "")
             return { depseudonymized, invalid: invalidPseudonyms };
@@ -347,7 +356,30 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
 
         for (const entry of responseArray) {
             const pseudonym = entry.ids[0].idString;
-            const idat = service.createIDAT(entry.fields.vorname, entry.fields.nachname, entry.fields.geburtsjahr + "-" + entry.fields.geburtsmonat + "-" + entry.fields.geburtstag);
+
+            const idat = {};
+
+            for (const field in entry.fields) {
+                for (const idatField of idatFields) {
+                    if (idatField.name === field) {
+                        if (idatField.type === 'number') {
+                            let number = Number(entry.fields[field]);
+                            if (idatField.fixMonth)
+                                number--;
+                            idat[field] = number;
+                        } else if (idatField.fixMonth) {
+                            let month = (Number(entry.fields[field]) - 1).toString();
+                            if (month.length === 1)
+                                month = '0' + month;
+                            idat[field] = month;
+                        } else {
+                            idat[field] = entry.fields[field];
+                        }
+                        break;
+                    }
+                }
+            }
+
             const tentative = entry.ids[0].tentative;
             depseudonymized.set(pseudonym, { idat, tentative });
         }
@@ -377,7 +409,7 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
             });
         }
 
-        const requestURL = serverURL + "/patients/send/mdat";
+        const requestURL = serverURL + "/patients/send";
 
         const options = {
             method: 'POST',
@@ -548,7 +580,7 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: amount
+            body: JSON.stringify({ amount })
         };
 
         const response = await fetch(requestURL, options);
@@ -569,18 +601,23 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
      * that can't get depseudonymized with the returned url.
      * Duplicated pseudonyms will be removed.
      * @param {string[]} pseudonyms Pseudonyms to depseudonymize.
+     * @param {string[]} [resultFields=[]] IDAT fields to return. By default, every field will be returned.
      * @returns {Promise<{url: string; invalidPseudonyms: string[];}>} URL for the depseudonymization and all invalid pseudonyms.
      * @throws Throws an exception if the server is not available.
      */
-    async function getDepseudonymizationURL(pseudonyms) {
+    async function getDepseudonymizationURL(pseudonyms, resultFields = []) {
         const requestURL = serverURL + "/tokens/readPatients";
+
+        if (resultFields.length === 0)
+            for (const field of idatFields)
+                resultFields.push(field.name);
 
         const options = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(pseudonyms)
+            body: JSON.stringify({ pseudonyms, resultFields })
         };
 
         const response = await fetch(requestURL, options);
@@ -604,24 +641,30 @@ function PseudonymHandler(serverURL, mainzellisteApiVersion) {
      * @throws Throws an exception if the Mainzelliste is not available.
      */
     async function getPseudonym(patient) {
-        let birthDay = (patient.idat.birthday.getDate()).toString();
-        let birthMonth = (patient.idat.birthday.getMonth() + 1).toString();
+        let requestBody = "";
 
-        if (birthDay.length === 1)
-            birthDay = "0" + birthDay;
+        for (const field of idatFields) {
+            const key = field.name;
+            const value = patient.idat[key];
 
-        if (birthMonth.length === 1)
-            birthMonth = "0" + birthMonth;
+            if (value == null)
+                requestBody += key + "=&";
+            else {
+                let valueString;
 
-        const requestBody = "vorname=" + patient.idat.firstname +
-            "&nachname=" + patient.idat.lastname +
-            "&geburtstag=" + birthDay +
-            "&geburtsmonat=" + birthMonth +
-            "&geburtsjahr=" + patient.idat.birthday.getFullYear() +
-            "&geburtsname=" +
-            "&plz=" +
-            "&ort=" +
-            "&sureness=" + patient.sureness.toString();
+                if (field.fixMonth)
+                    valueString = (Number(value) + 1).toString();
+                else
+                    valueString = value.toString();
+
+                if (field.fixZero && valueString.length === 1)
+                    requestBody += key + "=0" + valueString + "&";
+                else
+                    requestBody += key + "=" + valueString + "&";
+            }
+        }
+
+        requestBody += "sureness=" + patient.sureness.toString();
 
         const options = {
             method: 'POST',

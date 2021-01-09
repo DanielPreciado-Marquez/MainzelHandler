@@ -1,6 +1,7 @@
 'use strict';
 
 import { PatientStatus, PseudonymHandler } from "./pseudonymHandler.js";
+import config from "./pseudonymHandlerConfig.js";
 
 /**
  * @type {Map<patientKey, Patient>}
@@ -10,7 +11,8 @@ var nextKey = 0;
 var pseudonymHandler;
 
 window.onload = function () {
-    pseudonymHandler = new PseudonymHandler(contextPath + requestPath);
+    config.serverURL = contextPath + requestPath;
+    pseudonymHandler = new PseudonymHandler(config);
 
     updateList();
 
@@ -23,12 +25,24 @@ function createPatient() {
     const patientForm = document.getElementById("patient-form");
     const key = parseInt(patientForm["key-input"].value);
 
+    const birthDate = new Date(patientForm["birthday-input"].value);
+    const birthDay = birthDate.getDate();
+    const birthMonth = birthDate.getMonth();
+    const birthYear = birthDate.getFullYear();
+
+    // const birthDate = patientForm["birthday-input"].value.split('-');
+    // const birthDay = birthDate[2];
+    // const birthMonth = birthDate[1];
+    // const birthYear = birthDate[0];
+
     try {
+        const idat = pseudonymHandler.createIDAT(patientForm["firstname-input"].value, patientForm["lastname-input"].value, birthDay, birthMonth, birthYear);
+
         if (key !== "" && patients.has(key)) {
             const patient = patients.get(key);
-            pseudonymHandler.updateIDAT(patient, patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
+            pseudonymHandler.updateIDAT(patient, idat);
         } else {
-            const patient = pseudonymHandler.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value, patientForm["mdat-input"].value);
+            const patient = pseudonymHandler.createPatient(idat, patientForm["mdat-input"].value);
             patients.set(nextKey++, patient);
         }
 
@@ -43,6 +57,7 @@ function createPatient() {
         updateList();
     } catch (error) {
         document.getElementById("idat-error").innerHTML = error.message;
+        console.error(error);
     }
 }
 
@@ -51,6 +66,7 @@ async function updatePseudonyms() {
         await pseudonymHandler.sendPatients(patients);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error.message;
+        console.error(error);
     }
 
     updateList();

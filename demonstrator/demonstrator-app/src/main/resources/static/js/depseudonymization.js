@@ -1,12 +1,14 @@
 'use strict'
 
 import { PseudonymHandler } from "./pseudonymHandler.js";
+import config from "./pseudonymHandlerConfig.js";
 
 var pseudonyms = [];
 var pseudonymHandler;
 
 window.onload = function () {
-    pseudonymHandler = new PseudonymHandler(contextPath + requestPath);
+    config.serverURL = contextPath + requestPath;
+    pseudonymHandler = new PseudonymHandler(config);
 
     updateList();
 
@@ -30,6 +32,7 @@ async function updatePseudonyms() {
         updateList(depseudonymized, invalid);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error.message;
+        console.log(error);
     }
 }
 
