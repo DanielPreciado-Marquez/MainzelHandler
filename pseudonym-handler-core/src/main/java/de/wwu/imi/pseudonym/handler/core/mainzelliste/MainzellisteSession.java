@@ -72,7 +72,23 @@ public class MainzellisteSession {
 	 * @return DepseudonymizationResponse containing the url and the invalid
 	 *         pseudonyms.
 	 */
-	public DepseudonymizationUrlResponse createReadPatientsToken(final HttpClient httpClient, final List<String> pseudonyms) {
+	public DepseudonymizationUrlResponse createReadPatientsToken(final HttpClient httpClient,
+			final List<String> pseudonyms, final List<String> resultFields) {
+		return createReadPatientsToken(httpClient, pseudonyms, new JSONArray(resultFields));
+	}
+
+	/**
+	 * Creates an url for the depsudonymization of the given pseudonyms. The url can
+	 * be used to depseudonymize all given pseudonyms that are valid. Returns the
+	 * url and a list containing all invalid pseudonyms that can't get
+	 * depseudonymized with the returned url.
+	 *
+	 * @param pseudonyms Pseudonyms to depseudonymize.
+	 * @return DepseudonymizationResponse containing the url and the invalid
+	 *         pseudonyms.
+	 */
+	public DepseudonymizationUrlResponse createReadPatientsToken(final HttpClient httpClient,
+			final List<String> pseudonyms, final JSONArray resultFields) {
 		LOGGER.info("Requesting 'readPatients' token for " + pseudonyms.size() + " pseudonyms");
 
 		final JSONObject body = new JSONObject();
@@ -82,7 +98,7 @@ public class MainzellisteSession {
 		final JSONObject data = new JSONObject();
 		body.put("data", data);
 
-		data.put("resultFields", new JSONArray("['vorname', 'nachname', 'geburtstag', 'geburtsmonat', 'geburtsjahr']"));
+		data.put("resultFields", resultFields);
 		data.put("resultIds", new JSONArray("[pid]"));
 
 		String token = null;
@@ -176,7 +192,7 @@ public class MainzellisteSession {
 		try {
 			final HttpResponse httpResponse = httpClient.execute(request);
 			final int statusCode = httpResponse.getStatusLine().getStatusCode();
-			
+
 			final InputStream connectionResponse = httpResponse.getEntity().getContent();
 			final String response = IOUtils.toString(connectionResponse, StandardCharsets.UTF_8);
 
