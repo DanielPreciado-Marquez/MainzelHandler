@@ -4,11 +4,15 @@ public class PseudonymizationUrlRequest {
 
 	private Integer amount;
 
+	public PseudonymizationUrlRequest(final Integer amount) {
+		this.amount = amount;
+	}
+
 	public Integer getAmount() {
 		return amount;
 	}
 
-	public void setAmount(Integer amount) {
+	public void setAmount(final Integer amount) {
 		this.amount = amount;
 	}
 
