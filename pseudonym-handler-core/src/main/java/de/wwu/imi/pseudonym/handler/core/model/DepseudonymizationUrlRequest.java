@@ -7,6 +7,9 @@ public class DepseudonymizationUrlRequest {
 	private List<String> pseudonyms;
 	private List<String> resultFields;
 
+	public DepseudonymizationUrlRequest() {
+	}
+
 	public DepseudonymizationUrlRequest(final List<String> pseudonyms, final List<String> resultFields) {
 		this.pseudonyms = pseudonyms;
 		this.resultFields = resultFields;

@@ -4,6 +4,9 @@ public class PseudonymizationUrlRequest {
 
 	private Integer amount;
 
+	public PseudonymizationUrlRequest() {
+	}
+
 	public PseudonymizationUrlRequest(final Integer amount) {
 		this.amount = amount;
 	}
