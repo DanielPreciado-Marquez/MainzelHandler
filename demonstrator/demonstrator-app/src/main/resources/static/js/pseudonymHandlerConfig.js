@@ -1,49 +1,41 @@
 var pseudonymHandlerConfig = {
-    idatFields: [
-        {
-            name: 'vorname',
+    idatFields: {
+        'vorname': {
             type: 'string',
             required: true
         },
-        {
-            name: 'nachname',
+        'nachname': {
             type: 'string',
             required: true
         },
-        {
-            name: 'geburtstag',
+        'geburtstag': {
             type: 'number',
             //type: 'string',
             required: true,
             fixZero: true
         },
-        {
-            name: 'geburtsmonat',
+        'geburtsmonat': {
             type: 'number',
             //type: 'string',
             required: true,
             fixMonth: true,
             fixZero: true
         },
-        {
-            name: 'geburtsjahr',
+        'geburtsjahr': {
             type: 'number',
             //type: 'string',
             required: true
         },
-        {
-            name: 'geburtsname',
+        'geburtsname': {
             type: 'string'
         },
-        {
-            name: 'plz',
+        'plz': {
             type: 'string'
         },
-        {
-            name: 'ort',
+        'ort': {
             type: 'string'
         }
-    ],
+    },
     mainzellisteApiVersion: '3.0',
     serverURL: null
 }

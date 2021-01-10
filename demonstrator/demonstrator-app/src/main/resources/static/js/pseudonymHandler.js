@@ -66,9 +66,18 @@ const PatientStatus = Object.freeze({
 });
 
 /**
+ * Field in the IDAT.
+ * @typedef {Object} IDATEntry
+ * @property {string} type Type of the field. Valid are 'string' and 'number'.
+ * @property {boolean} required Wether the field is required or not.
+ * @property {boolean} [fixMonth=false] Shifts the month by one to fix the string representation.
+ * @property {boolean} [fixZero=false] Fills the string representation of a number with a zero if the number has only one digit. Useful for days and months.
+ */
+
+/**
  * @typedef {Object} PseudonymHandlerConfig
  * @property {string} [mainzellisteApiVersion=3.0] Version of the Mainzelliste api to be used. Default is 3.0.
- * @property {{name: string; type: string; required: boolean; fixMonth: boolean; fixZero: boolean;}[]} idatFields Field definitions of the Maintelliste.
+ * @property {Object.<string, IDATEntry>} idatFields Field definitions of the Maintelliste.
  * @property {string} serverURL URL of the MDAT server.
  */
 
@@ -92,9 +101,11 @@ function PseudonymHandler(pseudonymHandlerConfig) {
      * @returns {Patient} The patient.
      * @throws Throws an exception if the IDAT is not valid.
      */
-    service.createPatient = function (idat, mdat = "") {
+    service.createPatient = function (idat, mdat) {
+        mdat ??= "";
+
         if (typeof mdat !== 'string')
-            throw new TypeError("MDAT must be of the type 'string'!");
+            throw new TypeError("MDAT must be of the type 'string' but is type of '" + typeof mdat + "'!");
 
         this.validateIDAT(idat);
 
@@ -120,17 +131,43 @@ function PseudonymHandler(pseudonymHandlerConfig) {
      * @throws Throws an exception if the IDAT is not valid.
      */
     service.updateIDAT = function (patient, idat) {
-        this.validateIDAT(idat);
-        if (patient.status > 0) {
-            for (const key in patient.idat) {
-                if (patient.idat[key] !== idat[key]) {
-                    patient.pseudonym = null;
-                    patient.status = PatientStatus.CREATED;
-                    break;
+        let changed = false;
+
+        for (const fieldName in idat) {
+            const oldValue = patient.idat[fieldName];
+            const newValue = idat[fieldName];
+            const fieldDef = idatFields[fieldName];
+
+            if (oldValue == null && newValue != null) {
+                if (fieldDef == null)
+                    throw new Error("Field with name '" + fieldName + "' is not a valid idat field!");
+
+                if (typeof newValue !== fieldDef.type)
+                    throw new Error("Field with name '" + fieldName + "' of the type '" + typeof newValue + "' must be of the type '" + fieldDef.type + "'!");
+
+                changed = true;
+                patient.idat[fieldName] = newValue;
+            } else if (oldValue !== newValue) {
+                changed = true;
+
+                if (newValue == null) {
+                    if (fieldDef.required)
+                        throw new Error("Field with name '" + fieldName + "' can not get deleted because it is required!");
+
+                    delete patient.idat[fieldName];
+                } else {
+                    if (typeof newValue !== fieldDef.type)
+                        throw new Error("Field with name '" + fieldName + "' of the type '" + typeof newValue + "' must be of the type '" + fieldDef.type + "'!");
+
+                    patient.idat[fieldName] = newValue;
                 }
             }
         }
-        patient.idat = idat;
+
+        if (patient.status > 0 && changed) {
+            patient.pseudonym = null;
+            patient.status = PatientStatus.CREATED;
+        }
     }
 
     /**
@@ -142,11 +179,9 @@ function PseudonymHandler(pseudonymHandlerConfig) {
     service.createIDAT = function (...idatValues) {
         let idat = {};
 
-        for (let i = 0; i < idatValues.length; i++) {
-            const key = idatFields[i].name;
-            const value = idatValues[i];
-            idat[key] = value;
-        }
+        let i = 0;
+        for (const idatField in idatFields)
+            idat[idatField] = idatValues[i++];
 
         this.validateIDAT(idat);
         return idat;
@@ -158,29 +193,21 @@ function PseudonymHandler(pseudonymHandlerConfig) {
      * @throws Throws an exception if the IDAT is not valid.
      */
     service.validateIDAT = function (idat) {
-        for (const field of idatFields) {
-            const key = field.name;
-            const value = idat[key];
+        for (const idatField in idatFields) {
+            const field = idatFields[idatField];
+            const value = idat[idatField];
 
             if (value == null) {
                 if (field.required)
-                    throw new Error("Field with name '" + key + "' is not present but required!");
+                    throw new Error("Field with name '" + idatField + "' is not present but required!");
             }
             else if (typeof value !== field.type)
-                throw new Error("Field with name '" + key + "' of the type '" + typeof value + "' must be of the type '" + field.type + "'!");
+                throw new Error("Field with name '" + idatField + "' of the type '" + typeof value + "' must be of the type '" + field.type + "'!");
         }
 
-        for (const key in idat) {
-            let found = false;
-            for (const field of idatFields) {
-                if (key === field.name) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
-                throw new Error("Field with name '" + key + "' is no valid idat field!");
-        }
+        for (const key in idat)
+            if (idatFields[key] == null)
+                throw new Error("Field with name '" + key + "' is not a valid idat field!");
     }
 
     /**
@@ -360,24 +387,18 @@ function PseudonymHandler(pseudonymHandlerConfig) {
             const idat = {};
 
             for (const field in entry.fields) {
-                for (const idatField of idatFields) {
-                    if (idatField.name === field) {
-                        if (idatField.type === 'number') {
-                            let number = Number(entry.fields[field]);
-                            if (idatField.fixMonth)
-                                number--;
-                            idat[field] = number;
-                        } else if (idatField.fixMonth) {
-                            let month = (Number(entry.fields[field]) - 1).toString();
-                            if (month.length === 1)
-                                month = '0' + month;
-                            idat[field] = month;
-                        } else {
-                            idat[field] = entry.fields[field];
-                        }
-                        break;
-                    }
+                const idatField = idatFields[field];
+                let value = entry.fields[field];
+                if (idatField.type === 'number') {
+                    value = Number(value);
+                    if (idatField.fixMonth)
+                        value--;
+                } else if (idatField.fixMonth) {
+                    value = (Number(value) - 1).toString();
+                    if (value.length === 1)
+                        value = '0' + value;
                 }
+                idat[field] = value;
             }
 
             const tentative = entry.ids[0].tentative;
@@ -609,8 +630,8 @@ function PseudonymHandler(pseudonymHandlerConfig) {
         const requestURL = serverURL + "/tokens/readPatients";
 
         if (resultFields.length === 0)
-            for (const field of idatFields)
-                resultFields.push(field.name);
+            for (const idatField in idatFields)
+                resultFields.push(idatField);
 
         const options = {
             method: 'POST',
@@ -643,12 +664,12 @@ function PseudonymHandler(pseudonymHandlerConfig) {
     async function getPseudonym(patient) {
         let requestBody = "";
 
-        for (const field of idatFields) {
-            const key = field.name;
-            const value = patient.idat[key];
+        for (const idatField in idatFields) {
+            const value = patient.idat[idatField];
+            const field = idatFields[idatField];
 
             if (value == null)
-                requestBody += key + "=&";
+                requestBody += idatField + "=&";
             else {
                 let valueString;
 
@@ -658,9 +679,9 @@ function PseudonymHandler(pseudonymHandlerConfig) {
                     valueString = value.toString();
 
                 if (field.fixZero && valueString.length === 1)
-                    requestBody += key + "=0" + valueString + "&";
+                    requestBody += idatField + "=0" + valueString + "&";
                 else
-                    requestBody += key + "=" + valueString + "&";
+                    requestBody += idatField + "=" + valueString + "&";
             }
         }
 
