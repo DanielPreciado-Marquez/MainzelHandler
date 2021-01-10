@@ -12,7 +12,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import de.wwu.imi.pseudonym.handler.core.model.DepseudonymizationUrlRequest;
 import de.wwu.imi.pseudonym.handler.core.model.DepseudonymizationUrlResponse;
+import de.wwu.imi.pseudonym.handler.core.model.PseudonymizationUrlRequest;
 import de.wwu.imi.pseudonym.handler.core.model.PseudonymizationUrlResponse;
 import de.wwu.imi.pseudonym.handler.spring.PseudonymHandlerConfig;
 
@@ -30,16 +32,17 @@ class TokenControllerTest {
 	void getAddPatientTokenTest() {
 		final int urlLength = mainzellisteUrl.length();
 
-		final PseudonymizationUrlResponse response = tokenController.getPseudonymizationUrl(1);
+		final PseudonymizationUrlResponse response = tokenController.getPseudonymizationUrl(new PseudonymizationUrlRequest(1));
 
 		final String[] result = response.getUrlTokens();
 		assertEquals(1, result.length);
 
 		final String tokenUrl = result[0];
-		assertEquals(53 + urlLength, tokenUrl.length());
+		System.out.println(tokenUrl);
+		assertEquals(54 + urlLength, tokenUrl.length());
 
 		final String[] tokenUrlParts = tokenUrl.split("=");
-		assertEquals(mainzellisteUrl + "patients?tokenId", tokenUrlParts[0]);
+		assertEquals(mainzellisteUrl + "/patients?tokenId", tokenUrlParts[0]);
 		assertEquals(5, tokenUrlParts[1].split("-").length);
 	}
 
@@ -50,13 +53,13 @@ class TokenControllerTest {
 	void get10000AddPatientTokensTest() {
 		final int urlLength = mainzellisteUrl.length();
 
-		final PseudonymizationUrlResponse response = tokenController.getPseudonymizationUrl(10000);
+		final PseudonymizationUrlResponse response = tokenController.getPseudonymizationUrl(new PseudonymizationUrlRequest(10000));
 		final String[] result = response.getUrlTokens();
 		assertEquals(10000, result.length);
 
 		for (final String tokenUrl : result) {
-			assertEquals(53 + urlLength, tokenUrl.length());
-			assertEquals(mainzellisteUrl + "patients?tokenId", tokenUrl.split("=")[0]);
+			assertEquals(54 + urlLength, tokenUrl.length());
+			assertEquals(mainzellisteUrl + "/patients?tokenId", tokenUrl.split("=")[0]);
 		}
 	}
 
@@ -72,13 +75,16 @@ class TokenControllerTest {
 		pseudonyms.add(pseudonym0);
 		pseudonyms.add(pseudonym1);
 		pseudonyms.add(pseudonym2);
+		
+		final List<String> resultFields = new ArrayList<String>();
+		resultFields.add("vorname");
 
-		final DepseudonymizationUrlResponse resopnse = tokenController.getDepseudonymizationUrl(pseudonyms);
+		final DepseudonymizationUrlResponse resopnse = tokenController.getDepseudonymizationUrl(new DepseudonymizationUrlRequest(pseudonyms, resultFields));
 		final String tokenUrl = resopnse.getUrl();
 		final List<String> invalidPseudonyms = resopnse.getInvalidPseudonyms();
 
-		assertEquals(53 + urlLength, tokenUrl.length(), "Length of the URL is wrong");
-		assertEquals(mainzellisteUrl + "patients?tokenId", tokenUrl.split("=")[0]);
+		assertEquals(54 + urlLength, tokenUrl.length(), "Length of the URL is wrong");
+		assertEquals(mainzellisteUrl + "/patients?tokenId", tokenUrl.split("=")[0]);
 
 		assertEquals(2, invalidPseudonyms.size());
 		assertTrue(invalidPseudonyms.contains(pseudonym0));
@@ -90,10 +96,12 @@ class TokenControllerTest {
 		final List<String> pseudonyms = new ArrayList<String>();
 
 		final String pseudonym = "";
-
 		pseudonyms.add(pseudonym);
+		
+		final List<String> resultFields = new ArrayList<String>();
+		resultFields.add("vorname");
 
-		final DepseudonymizationUrlResponse resopnse = tokenController.getDepseudonymizationUrl(pseudonyms);
+		final DepseudonymizationUrlResponse resopnse = tokenController.getDepseudonymizationUrl(new DepseudonymizationUrlRequest(pseudonyms, resultFields));
 		final String url = resopnse.getUrl();
 		final List<String> invalidPseudonyms = resopnse.getInvalidPseudonyms();
 
