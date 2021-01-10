@@ -1,56 +1,68 @@
 'use strict';
 
 import { PatientStatus, PseudonymHandler } from "./pseudonymHandler.js";
+import config from "./pseudonymHandlerConfig.js";
 
 QUnit.config.autostart = false;
 
 var pseudonymHandler;
 
 window.onload = function () {
-    pseudonymHandler = new PseudonymHandler(contextPath + requestPath);
+    config.serverURL = contextPath + requestPath;
+    pseudonymHandler = new PseudonymHandler(config);
     QUnit.start();
 }
 
 QUnit.module('createIDAT', () => {
 
-    QUnit.test('Create IDAT with a string for the Date', assert => {
-        assert.expect(3);
+    QUnit.test('Create minimum IDAT', assert => {
+        assert.expect(5);
 
-        const idat = pseudonymHandler.createIDAT("a", "s", "2020-10-20");
+        const idat = pseudonymHandler.createIDAT("a", "s", 20, 10, 2020);
 
-        assert.strictEqual(idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
-        assert.strictEqual(idat.firstname, "a", 'Compare firstname');
-        assert.strictEqual(idat.lastname, "s", 'Compare lastname');
+        assert.strictEqual(idat.vorname, "a", 'Compare firstname');
+        assert.strictEqual(idat.nachname, "s", 'Compare lastname');
+        assert.strictEqual(idat.geburtstag, 20, 'Compare birthday');
+        assert.strictEqual(idat.geburtsmonat, 10, 'Compare birth month');
+        assert.strictEqual(idat.geburtsjahr, 2020, 'Compare birth year');
     });
 
-    QUnit.test('Create IDAT with a number for the Date', assert => {
-        assert.expect(3);
+    QUnit.test('Create IDAT', assert => {
+        assert.expect(6);
 
-        const idat = pseudonymHandler.createIDAT(" q", "w ", 12);
+        const idat = pseudonymHandler.createIDAT("q", "w", 3, 1, 1999, "e");
 
-        assert.strictEqual(idat.birthday.getTime(), new Date(12).getTime(), 'Compare birthday');
-        assert.strictEqual(idat.firstname, "q", 'Compare firstname');
-        assert.strictEqual(idat.lastname, "w", 'Compare lastname');
+        assert.strictEqual(idat.vorname, "q", 'Compare firstname');
+        assert.strictEqual(idat.nachname, "w", 'Compare lastname');
+        assert.strictEqual(idat.geburtstag, 3, 'Compare birthday');
+        assert.strictEqual(idat.geburtsmonat, 1, 'Compare birth month');
+        assert.strictEqual(idat.geburtsjahr, 1999, 'Compare birth year');
+        assert.strictEqual(idat.geburtsname, "e", 'Compare birth name');
     });
 
-    QUnit.test('Create IDAT with a Date for the Date', assert => {
-        assert.expect(3);
+    QUnit.test('Create maximum IDAT', assert => {
+        assert.expect(8);
 
-        const idat = pseudonymHandler.createIDAT("e", " r ", new Date("2020-10-20"));
+        const idat = pseudonymHandler.createIDAT("t", "z", 11, 1, 1997, "u", "schöner", "Ort");
 
-        assert.strictEqual(idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
-        assert.strictEqual(idat.firstname, "e", 'Compare firstname');
-        assert.strictEqual(idat.lastname, "r", 'Compare lastname');
+        assert.strictEqual(idat.vorname, "t", 'Compare firstname');
+        assert.strictEqual(idat.nachname, "z", 'Compare lastname');
+        assert.strictEqual(idat.geburtstag, 11, 'Compare birthday');
+        assert.strictEqual(idat.geburtsmonat, 1, 'Compare birth month');
+        assert.strictEqual(idat.geburtsjahr, 1997, 'Compare birth year');
+        assert.strictEqual(idat.geburtsname, "u", 'Compare birth name');
+        assert.strictEqual(idat.plz, "schöner", 'Compare post code');
+        assert.strictEqual(idat.ort, "Ort", 'Compare city');
     });
 
     QUnit.test('Invalid firstname', assert => {
-        assert.expect(4);
+        assert.expect(3);
 
         assert.throws(
             () => {
                 pseudonymHandler.createIDAT();
             },
-            /Invalid firstname!/,
+            /Field with name 'vorname' is not present but required!/,
             'Firstname undefined'
         );
 
@@ -58,35 +70,27 @@ QUnit.module('createIDAT', () => {
             () => {
                 pseudonymHandler.createIDAT(null, null, null);
             },
-            /Invalid firstname!/,
+            /Field with name 'vorname' is not present but required!/,
             'Firstname null'
-        );
-
-        assert.throws(
-            () => {
-                pseudonymHandler.createIDAT("", null, null);
-            },
-            /Invalid firstname!/,
-            'Firstname empty'
         );
 
         assert.throws(
             () => {
                 pseudonymHandler.createIDAT(0, null, null);
             },
-            /Invalid firstname!/,
+            /Field with name 'vorname' of the type 'number' must be of the type 'string'!/,
             'Firstname wrong type'
         );
     });
 
     QUnit.test('Invalid lastname!', assert => {
-        assert.expect(4);
+        assert.expect(3);
 
         assert.throws(
             () => {
                 pseudonymHandler.createIDAT("a");
             },
-            /Invalid lastname!/,
+            /Field with name 'nachname' is not present but required!/,
             'Lastname undefined'
         );
 
@@ -94,23 +98,15 @@ QUnit.module('createIDAT', () => {
             () => {
                 pseudonymHandler.createIDAT("a", null, null);
             },
-            /Invalid lastname!/,
+            /Field with name 'nachname' is not present but required!/,
             'Lastname null'
-        );
-
-        assert.throws(
-            () => {
-                pseudonymHandler.createIDAT("a", "", null);
-            },
-            /Invalid lastname!/,
-            'Lastname empty'
         );
 
         assert.throws(
             () => {
                 pseudonymHandler.createIDAT("a", 1, null);
             },
-            /Invalid lastname!/,
+            /Field with name 'nachname' of the type 'number' must be of the type 'string'!/,
             'Lastname wrong type'
         );
     });
@@ -122,7 +118,7 @@ QUnit.module('createIDAT', () => {
             () => {
                 pseudonymHandler.createIDAT("a", "b");
             },
-            /Invalid birthday!/,
+            /Field with name 'geburtstag' is not present but required!/,
             'birthday undefined'
         );
 
@@ -130,7 +126,7 @@ QUnit.module('createIDAT', () => {
             () => {
                 pseudonymHandler.createIDAT("a", "b", null);
             },
-            /Invalid birthday!/,
+            /Field with name 'geburtstag' is not present but required!/,
             'birthday null'
         );
 
@@ -138,7 +134,7 @@ QUnit.module('createIDAT', () => {
             () => {
                 pseudonymHandler.createIDAT("a", "b", "");
             },
-            /Invalid birthday!/,
+            /Field with name 'geburtstag' of the type 'string' must be of the type 'number'!/,
             'birthday empty'
         );
 
@@ -146,51 +142,132 @@ QUnit.module('createIDAT', () => {
             () => {
                 pseudonymHandler.createIDAT("a", "b", true);
             },
-            /Invalid birthday!/,
+            /Field with name 'geburtstag' of the type 'boolean' must be of the type 'number'!/,
             'birthday wrong type'
         );
 
         assert.throws(
             () => {
                 const date = new Date();
-                date.setDate(date.getDate() + 1);
-
                 pseudonymHandler.createIDAT("a", "b", date);
             },
-            /Invalid birthday!/,
+            /Field with name 'geburtstag' of the type 'object' must be of the type 'number'!/,
             'birthday future date'
+        );
+    });
+
+    QUnit.test('Invalid birth name!', assert => {
+        assert.expect(3);
+
+        assert.throws(
+            () => {
+                const idat = pseudonymHandler.createIDAT("a", "s", 20, 10, 2020, true);
+            },
+            /Field with name 'geburtsname' of the type 'boolean' must be of the type 'string'!/,
+            'birthday wrong type boolean'
+        );
+
+        assert.throws(
+            () => {
+                const idat = pseudonymHandler.createIDAT("a", "s", 20, 10, 2020, 3);
+            },
+            /Field with name 'geburtsname' of the type 'number' must be of the type 'string'!/,
+            'birthday wrong type number'
+        );
+
+        assert.throws(
+            () => {
+                const date = new Date();
+                const idat = pseudonymHandler.createIDAT("a", "s", 20, 10, 2020, date);
+            },
+            /Field with name 'geburtsname' of the type 'object' must be of the type 'string'!/,
+            'birthday wrong type object'
         );
     });
 });
 
+QUnit.module('Validate Idat', () => {
+
+    QUnit.test('Create regular IDAT', assert => {
+        assert.expect(1);
+
+        const idat = { vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 };
+        pseudonymHandler.validateIDAT(idat);
+        assert.ok(true, "Validation");
+    });
+
+    QUnit.test('Missing required field', assert => {
+        assert.expect(1);
+
+        const idat = { vorname: "a", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 };
+
+        assert.throws(
+            () => {
+                pseudonymHandler.validateIDAT(idat);
+            },
+            /Field with name 'nachname' is not present but required!/,
+            'MDAT wrong type (object)'
+        );
+    });
+
+    QUnit.test('Invalid type', assert => {
+        assert.expect(1);
+
+        const idat = { vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: "10", geburtsjahr: 2020 };
+
+        assert.throws(
+            () => {
+                pseudonymHandler.validateIDAT(idat);
+            },
+            /Field with name 'geburtsmonat' of the type 'string' must be of the type 'number'!/,
+            'MDAT wrong type (Array)'
+        );
+    });
+
+    QUnit.test('Invalid field name', assert => {
+        assert.expect(1);
+
+        const idat = { vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020, pizza: "delicious" };
+
+        assert.throws(
+            () => {
+                pseudonymHandler.validateIDAT(idat);
+            },
+            /Field with name 'pizza' is not a valid idat field!/,
+            'MDAT wrong type (Array)'
+        );
+    });
+});
 
 QUnit.module('createPatient', () => {
+
+    const idat = { vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 };
 
     QUnit.test('Create regular with MDAT undefined', assert => {
         assert.expect(1);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient = pseudonymHandler.createPatient(idat);
         assert.strictEqual(patient.mdat, "", 'Compare MDAT');
     });
 
     QUnit.test('Create regular with MDAT null', assert => {
         assert.expect(1);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20", null);
+        const patient = pseudonymHandler.createPatient(idat, null);
         assert.deepEqual(patient.mdat, "", 'Compare MDAT');
     });
 
     QUnit.test('Create regular with MDAT string', assert => {
         assert.expect(1);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20", "mdat");
+        const patient = pseudonymHandler.createPatient(idat, "mdat");
         assert.strictEqual(patient.mdat, "mdat", 'Compare MDAT');
     });
 
     QUnit.test('Create regular with MDAT stringified JS-object', assert => {
         assert.expect(1);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20", JSON.stringify({ height: 180 }));
+        const patient = pseudonymHandler.createPatient(idat, JSON.stringify({ height: 180 }));
         assert.deepEqual(JSON.parse(patient.mdat), { height: 180 }, 'Compare MDAT');
     });
 
@@ -199,9 +276,9 @@ QUnit.module('createPatient', () => {
 
         assert.throws(
             () => {
-                pseudonymHandler.createPatient("a", "s", "2020-10-20", { height: 180 });
+                pseudonymHandler.createPatient(idat, { height: 180 });
             },
-            /Invalid MDAT!/,
+            /MDAT must be of the type 'string' but is type of 'object'!/,
             'MDAT wrong type (object)'
         );
     });
@@ -211,9 +288,9 @@ QUnit.module('createPatient', () => {
 
         assert.throws(
             () => {
-                pseudonymHandler.createPatient("a", "s", "2020-10-20", [1, 2, 3]);
+                pseudonymHandler.createPatient(idat, [1, 2, 3]);
             },
-            /Invalid MDAT!/,
+            /MDAT must be of the type 'string' but is type of 'object'!/,
             'MDAT wrong type (Array)'
         );
     });
@@ -222,94 +299,189 @@ QUnit.module('createPatient', () => {
 QUnit.module('updateIDAT', () => {
 
     QUnit.test('Update CREATED', assert => {
-        assert.expect(3);
+        assert.expect(5);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20");
-        pseudonymHandler.updateIDAT(patient, "q", "w", "2020-10-21");
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
+        pseudonymHandler.updateIDAT(patient, { vorname: "q", nachname: "w", geburtstag: 21, geburtsmonat: 10, geburtsjahr: 2020 });
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-21").getTime(), 'Compare birthday');
-        assert.strictEqual(patient.idat.firstname, "q", 'Compare firstname');
-        assert.strictEqual(patient.idat.lastname, "w", 'Compare lastname');
+        assert.strictEqual(patient.idat.vorname, "q", 'Compare firstname');
+        assert.strictEqual(patient.idat.nachname, "w", 'Compare lastname');
+        assert.strictEqual(patient.idat.geburtstag, 21, 'Compare birthday');
+        assert.strictEqual(patient.idat.geburtsmonat, 10, 'Compare birth month');
+        assert.strictEqual(patient.idat.geburtsjahr, 2020, 'Compare birth year');
+    });
+
+    QUnit.test('Update CREATED remove', assert => {
+        assert.expect(6);
+
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020, geburtsname: "e" });
+        pseudonymHandler.updateIDAT(patient, { vorname: "q", nachname: "w", geburtstag: 21, geburtsname: null });
+
+        assert.strictEqual(patient.idat.vorname, "q", 'Compare firstname');
+        assert.strictEqual(patient.idat.nachname, "w", 'Compare lastname');
+        assert.strictEqual(patient.idat.geburtstag, 21, 'Compare birthday');
+        assert.strictEqual(patient.idat.geburtsmonat, 10, 'Compare birth month');
+        assert.strictEqual(patient.idat.geburtsjahr, 2020, 'Compare birth year');
+        assert.strictEqual(patient.idat.geburtsname, undefined, 'Compare birth name');
+    });
+
+    QUnit.test('Update CREATED add', assert => {
+        assert.expect(6);
+
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
+        pseudonymHandler.updateIDAT(patient, { vorname: "q", nachname: "w", geburtstag: 21, geburtsname: "e" });
+
+        assert.strictEqual(patient.idat.vorname, "q", 'Compare firstname');
+        assert.strictEqual(patient.idat.nachname, "w", 'Compare lastname');
+        assert.strictEqual(patient.idat.geburtstag, 21, 'Compare birthday');
+        assert.strictEqual(patient.idat.geburtsmonat, 10, 'Compare birth month');
+        assert.strictEqual(patient.idat.geburtsjahr, 2020, 'Compare birth year');
+        assert.strictEqual(patient.idat.geburtsname, "e", 'Compare birth name');
+    });
+
+    QUnit.test('Add null value', assert => {
+        assert.expect(6);
+
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
+        pseudonymHandler.updateIDAT(patient, { geburtsname: null });
+
+        assert.strictEqual(patient.idat.vorname, "a", 'Compare firstname');
+        assert.strictEqual(patient.idat.nachname, "s", 'Compare lastname');
+        assert.strictEqual(patient.idat.geburtstag, 20, 'Compare birthday');
+        assert.strictEqual(patient.idat.geburtsmonat, 10, 'Compare birth month');
+        assert.strictEqual(patient.idat.geburtsjahr, 2020, 'Compare birth year');
+        assert.strictEqual(patient.idat.geburtsname, undefined, 'Compare birth name');
     });
 
     QUnit.test('Update conflict', assert => {
-        assert.expect(5);
+        assert.expect(7);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "08-10-2020");
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 8, geburtsmonat: 10, geburtsjahr: 2020 });
         patient.status = PatientStatus.IDAT_CONFLICT;
         patient.tokenURL = "http://tokenURL";
 
-        pseudonymHandler.updateIDAT(patient, "q", "w", "2020-10-21");
+        pseudonymHandler.updateIDAT(patient, { vorname: "q", nachname: "w", geburtstag: 21 });
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-21").getTime(), 'Compare birthday');
-        assert.strictEqual(patient.idat.firstname, "q", 'Compare firstname');
-        assert.strictEqual(patient.idat.lastname, "w", 'Compare lastname');
+        assert.strictEqual(patient.idat.vorname, "q", 'Compare firstname');
+        assert.strictEqual(patient.idat.nachname, "w", 'Compare lastname');
+        assert.strictEqual(patient.idat.geburtstag, 21, 'Compare birthday');
+        assert.strictEqual(patient.idat.geburtsmonat, 10, 'Compare birth month');
+        assert.strictEqual(patient.idat.geburtsjahr, 2020, 'Compare birth year');
         assert.strictEqual(patient.status, PatientStatus.IDAT_CONFLICT, 'Compare status');
         assert.strictEqual(patient.tokenURL, "http://tokenURL", 'Compare tokenURL');
     });
 
     QUnit.test('Update PSEUDONYMIZED different firstname', assert => {
-        assert.expect(5);
+        assert.expect(3);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
         patient.status = PatientStatus.PSEUDONYMIZED;
         patient.pseudonym = "pseudonym";
 
-        pseudonymHandler.updateIDAT(patient, "q", "s", "2020-10-20");
+        pseudonymHandler.updateIDAT(patient, { vorname: "q" });
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
-        assert.strictEqual(patient.idat.firstname, "q", 'Compare firstname');
-        assert.strictEqual(patient.idat.lastname, "s", 'Compare lastname');
+        assert.strictEqual(patient.idat.vorname, "q", 'Compare firstname');
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status');
         assert.strictEqual(patient.pseudonym, null, 'Compare pseudonym');
     });
 
-    QUnit.test('Update PSEUDONYMIZED different lastname', assert => {
-        assert.expect(5);
+    QUnit.test('Update PSEUDONYMIZED add field', assert => {
+        assert.expect(4);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
         patient.status = PatientStatus.PSEUDONYMIZED;
         patient.pseudonym = "pseudonym";
 
-        pseudonymHandler.updateIDAT(patient, "a", "w", "2020-10-20");
+        pseudonymHandler.updateIDAT(patient, { geburtsname: "Hallo" });
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
-        assert.strictEqual(patient.idat.firstname, "a", 'Compare firstname');
-        assert.strictEqual(patient.idat.lastname, "w", 'Compare lastname');
+        assert.strictEqual(patient.idat.vorname, "a", 'Compare firstname');
+        assert.strictEqual(patient.idat.geburtsname, "Hallo", 'Compare birth name');
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status');
         assert.strictEqual(patient.pseudonym, null, 'Compare pseudonym');
     });
 
-    QUnit.test('Update PSEUDONYMIZED different birthday', assert => {
-        assert.expect(5);
+    QUnit.test('Update PSEUDONYMIZED remove field', assert => {
+        assert.expect(4);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020, geburtsname: "Hallo" });
         patient.status = PatientStatus.PSEUDONYMIZED;
         patient.pseudonym = "pseudonym";
 
-        pseudonymHandler.updateIDAT(patient, "a", "s", "2020-10-21");
+        pseudonymHandler.updateIDAT(patient, { geburtsname: null });
 
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-21").getTime(), 'Compare birthday');
-        assert.strictEqual(patient.idat.firstname, "a", 'Compare firstname');
-        assert.strictEqual(patient.idat.lastname, "s", 'Compare lastname');
+        assert.strictEqual(patient.idat.vorname, "a", 'Compare firstname');
+        assert.strictEqual(patient.idat.geburtsname, undefined, 'Compare birth name');
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status');
         assert.strictEqual(patient.pseudonym, null, 'Compare pseudonym');
     });
 
     QUnit.test('Update PSEUDONYMIZED same data', assert => {
-        assert.expect(5);
+        assert.expect(7);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
         patient.status = PatientStatus.PSEUDONYMIZED;
         patient.pseudonym = "pseudonym";
 
-        pseudonymHandler.updateIDAT(patient, "a", "s", "2020-10-20");
-
-        assert.strictEqual(patient.idat.birthday.getTime(), new Date("2020-10-20").getTime(), 'Compare birthday');
-        assert.strictEqual(patient.idat.firstname, "a", 'Compare firstname');
-        assert.strictEqual(patient.idat.lastname, "s", 'Compare lastname');
+        pseudonymHandler.updateIDAT(patient, { vorname: "a", geburtstag: 20 });
+        assert.strictEqual(patient.idat.vorname, "a", 'Compare firstname');
+        assert.strictEqual(patient.idat.nachname, "s", 'Compare lastname');
+        assert.strictEqual(patient.idat.geburtstag, 20, 'Compare birthday');
+        assert.strictEqual(patient.idat.geburtsmonat, 10, 'Compare birth month');
+        assert.strictEqual(patient.idat.geburtsjahr, 2020, 'Compare birth year');
         assert.strictEqual(patient.status, PatientStatus.PSEUDONYMIZED, 'Compare status');
         assert.strictEqual(patient.pseudonym, "pseudonym", 'Compare pseudonym');
+    });
+
+    QUnit.test('Delete required', assert => {
+        assert.expect(1);
+
+        assert.throws(
+            () => {
+                const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
+                pseudonymHandler.updateIDAT(patient, { vorname: null });
+            },
+            /Field with name 'vorname' can not get deleted because it is required!/,
+            'Delete vorname'
+        );
+    });
+
+    QUnit.test('Update wrong type', assert => {
+        assert.expect(1);
+
+        assert.throws(
+            () => {
+                const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
+                pseudonymHandler.updateIDAT(patient, { vorname: 0 });
+            },
+            /Field with name 'vorname' of the type 'number' must be of the type 'string'!/,
+            'Delete vorname'
+        );
+    });
+
+    QUnit.test('Add wrong type', assert => {
+        assert.expect(1);
+
+        assert.throws(
+            () => {
+                const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
+                pseudonymHandler.updateIDAT(patient, { geburtsname: 3 });
+            },
+            /Field with name 'geburtsname' of the type 'number' must be of the type 'string'!/,
+            'Delete vorname'
+        );
+    });
+
+    QUnit.test('Add invalid field', assert => {
+        assert.expect(1);
+
+        assert.throws(
+            () => {
+                const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
+                pseudonymHandler.updateIDAT(patient, { pizza: "delicious" });
+            },
+            /Field with name 'pizza' is not a valid idat field!/,
+            'Delete vorname'
+        );
     });
 });
 
@@ -318,7 +490,7 @@ QUnit.module('updateMDAT', () => {
     QUnit.test('Update CREATED', assert => {
         assert.expect(4);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
 
         assert.strictEqual(patient.status, PatientStatus.CREATED, 'Compare status before');
         assert.deepEqual(patient.mdat, "", 'Compare MDAT before');
@@ -333,7 +505,7 @@ QUnit.module('updateMDAT', () => {
     QUnit.test('Update SAVED', assert => {
         assert.expect(4);
 
-        const patient = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
         patient.status = PatientStatus.PROCESSED;
 
         assert.strictEqual(patient.status, PatientStatus.PROCESSED, 'Compare status before');
@@ -355,19 +527,19 @@ QUnit.module('getPatients', hooks => {
     hooks.before(() => {
         patients = new Map();
 
-        const patient0 = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient0 = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
         patient0.status = PatientStatus.PSEUDONYMIZED;
         patients.set(0, patient0);
 
-        const patient1 = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient1 = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
         patient1.status = PatientStatus.IDAT_CONFLICT;
         patients.set(1, patient1);
 
-        const patient2 = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient2 = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
         patient2.status = PatientStatus.PSEUDONYMIZED;
         patients.set(2, patient2);
 
-        const patient3 = pseudonymHandler.createPatient("a", "s", "2020-10-20");
+        const patient3 = pseudonymHandler.createPatient({ vorname: "a", nachname: "s", geburtstag: 20, geburtsmonat: 10, geburtsjahr: 2020 });
         patient3.status = PatientStatus.SAVED;
         patients.set(3, patient3);
     });
