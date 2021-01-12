@@ -19,6 +19,9 @@ import de.wwu.imi.pseudonym.handler.core.interfaces.PatientInterface;
 import de.wwu.imi.pseudonym.handler.core.model.Patient;
 import de.wwu.imi.pseudonym.handler.spring.services.PseudonymManagerSpring;
 
+/**
+ * REST interface for the patient resource.
+ */
 @RequestMapping("${pseudonym-handler.request-path:}/patients")
 public abstract class AbstractPatientController implements PatientInterface {
 
@@ -54,7 +57,7 @@ public abstract class AbstractPatientController implements PatientInterface {
 	}
 
 	/**
-	 * Accepts the callback request from the mainzelliste. Saves the containing
+	 * Accepts the callback request from the Mainzelliste. Saves the containing
 	 * token and pseudonym with the pseudonymManager.
 	 *
 	 * @param requestBody Token and pseudonym of the pseudonymization.
@@ -66,15 +69,15 @@ public abstract class AbstractPatientController implements PatientInterface {
 	}
 
 	/**
-	 * Request the mdat of the given patients. Returns the patients found by the
-	 * application. The ids are either the patients pseudonyms if
+	 * Request the MDAT of the given patients. Returns the patients found by the
+	 * application. The id's are either the patients pseudonyms if
 	 * {@link #useCallback} is false or the token used for the pseudonymization if
 	 * {@link #useCallback} is true. The value of {@link #useCallback} gets send to
 	 * the client with the request of the tokens.
 	 *
-	 * @param ids List containing ids of the requsted patients. An id is either a
+	 * @param ids List containing id's of the requested patients. An id is either a
 	 *            pseudonym or the token used for the pseudonymization.
-	 * @return Map containing the ids and the corresponding mdat.
+	 * @return Map containing the id's and the corresponding MDAT.
 	 */
 	@PostMapping("/request")
 	public final List<Patient> requestPatientsRequest(@RequestBody List<String> ids) {

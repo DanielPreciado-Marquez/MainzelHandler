@@ -21,12 +21,31 @@ import de.wwu.imi.pseudonym.handler.core.model.DepseudonymizationUrlResponse;
 import de.wwu.imi.pseudonym.handler.core.model.PseudonymizationUrlRequest;
 import de.wwu.imi.pseudonym.handler.core.model.PseudonymizationUrlResponse;
 
+/**
+ * Interface for the token resource.
+ */
 @RequestMapping("${pseudonym-handler.request-path:}/tokens")
 @RestController
 public class TokenController implements TokenInterface {
 
+	/**
+	 * Connection to the Mainzelliste.
+	 */
 	private MainzellisteConnection mainzellisteConnection;
 
+	/**
+	 * Construct a new TokenContoller.
+	 *
+	 * @param mainzellisteUrl        URL of the Mainzelliste.
+	 * @param mainzellisteApiKey     API key of the Mainzelliste.
+	 * @param mainzellisteApiVersion API version of the Mainzelliste to use.
+	 * @param serverPort             Port of the application.
+	 * @param contextPath            Context path of the application.
+	 * @param requestPath            Path of the controller.
+	 * @param serverUrl              URL of the application's server
+	 * @param useCallback            Whether the callback function of the
+	 *                               Mainzelliste should be activated.
+	 */
 	public TokenController(@Value("${pseudonym-handler.mainzelliste.url}") final String mainzellisteUrl,
 			@Value("${pseudonym-handler.mainzelliste.api.key}") final String mainzellisteApiKey,
 			@Value("${pseudonym-handler.mainzelliste.api.version:3.0}") final String mainzellisteApiVersion,

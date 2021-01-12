@@ -22,32 +22,57 @@ import de.wwu.imi.pseudonym.handler.core.exceptions.MainzellisteRuntimeException
 import de.wwu.imi.pseudonym.handler.core.model.DepseudonymizationUrlResponse;
 import de.wwu.imi.pseudonym.handler.core.model.PseudonymizationUrlResponse;
 
+/**
+ * Represents a session on the Mainzelliste. Provides Methods to request
+ * addPatient and readPatients token.
+ */
 public class MainzellisteSession {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MainzellisteSession.class);
 
+	/**
+	 * Connection to the Mainzelliste providing the informations for the requests.
+	 */
 	private MainzellisteConnection mainzellisteConnection;
+
+	/**
+	 * Id of the session on the Mainzelliste.
+	 */
 	private String sessionId;
 
+	/**
+	 * Constructs a new MainzellisteSession. Does not create the session on the
+	 * Mainzelliste. Use
+	 * {@link MainzellisteConnection#createMainzellisteSession(HttpClient)} instead.
+	 *
+	 * @param mainzellisteConnection Connection to the Mainzelliste.
+	 * @param sessionId              Id of the session on the Mainzelliste.
+	 */
 	public MainzellisteSession(final MainzellisteConnection mainzellisteConnection, final String sessionId) {
 		this.mainzellisteConnection = mainzellisteConnection;
 		this.sessionId = sessionId;
 	}
 
+	/**
+	 * @return Id of the session on the Mainzelliste.
+	 */
 	public String getSessionId() {
 		return sessionId;
 	}
 
+	/**
+	 * @return URL to access the corresponding session.
+	 */
 	public String getSessionUrl() {
 		return mainzellisteConnection.getUrl() + "/sessions/" + sessionId;
 	}
 
 	/**
-	 * Request addPatient tokens from the Mainzelliste. Returns the requested amount
-	 * of urls.
+	 * Request addPatient tokens from the Mainzelliste. Returns the requested number
+	 * of URLs.
 	 *
 	 * @param amount Amount of requested addPatient token.
-	 * @return PseudonymizationUrlResponse containing the array of urls for
+	 * @return PseudonymizationUrlResponse containing the array of URLs for
 	 *         pseudonymizations and the value of useCallback.
 	 */
 	public PseudonymizationUrlResponse createAddPatientTokens(final HttpClient httpClient, final int amount) {
@@ -63,13 +88,13 @@ public class MainzellisteSession {
 	}
 
 	/**
-	 * Creates an url for the depsudonymization of the given pseudonyms. The url can
+	 * Creates an URL for the depsudonymization of the given pseudonyms. The URL can
 	 * be used to depseudonymize all given pseudonyms that are valid. Returns the
-	 * url and a list containing all invalid pseudonyms that can't get
-	 * depseudonymized with the returned url.
+	 * URL and a list containing all invalid pseudonyms that can't get
+	 * depseudonymized with the returned URL.
 	 *
 	 * @param pseudonyms Pseudonyms to depseudonymize.
-	 * @return DepseudonymizationResponse containing the url and the invalid
+	 * @return DepseudonymizationResponse containing the URL and the invalid
 	 *         pseudonyms.
 	 */
 	public DepseudonymizationUrlResponse createReadPatientsToken(final HttpClient httpClient,
@@ -78,13 +103,13 @@ public class MainzellisteSession {
 	}
 
 	/**
-	 * Creates an url for the depsudonymization of the given pseudonyms. The url can
+	 * Creates an URL for the depsudonymization of the given pseudonyms. The URL can
 	 * be used to depseudonymize all given pseudonyms that are valid. Returns the
-	 * url and a list containing all invalid pseudonyms that can't get
-	 * depseudonymized with the returned url.
+	 * URL and a list containing all invalid pseudonyms that can't get
+	 * depseudonymized with the returned URL.
 	 *
 	 * @param pseudonyms Pseudonyms to depseudonymize.
-	 * @return DepseudonymizationResponse containing the url and the invalid
+	 * @return DepseudonymizationResponse containing the URL and the invalid
 	 *         pseudonyms.
 	 */
 	public DepseudonymizationUrlResponse createReadPatientsToken(final HttpClient httpClient,
@@ -148,7 +173,7 @@ public class MainzellisteSession {
 	 * Gets a query token which allows to add a new patient from the Mainzelliste
 	 * with given sessionURL.
 	 *
-	 * @param sessionUrl A session url with a valid session token from the
+	 * @param sessionUrl A session URL with a valid session token from the
 	 *                   Mainzelliste.
 	 * @param httpClient A HTTP-Client for the connection.
 	 * @return The query token from the Mainzelliste.
@@ -169,7 +194,7 @@ public class MainzellisteSession {
 	}
 
 	/**
-	 * Generates a token at the Mainzelliste in the given session.
+	 * Generates a token at the Mainzelliste with the given request body
 	 *
 	 * @param sessionUrl URL to a session at the Mainzelliste.
 	 * @param httpClient A HTTP-Client for the connection.

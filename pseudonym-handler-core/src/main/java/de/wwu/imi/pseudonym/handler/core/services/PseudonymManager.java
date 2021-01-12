@@ -129,8 +129,22 @@ public class PseudonymManager {
 
 		LOGGER.debug("Finished cleaning pseudonyms");
 	}
-	
-	public Map<String, Boolean> processPatients(final List<Patient> patients, final Function<List<Patient>, Map<String, Boolean>> processFunction, final boolean useCallback) {
+
+	/**
+	 * Utility function to exchange the tokens with the pseudonyms and back. If
+	 * useCallback is true, it exchanges the tokens of the given patients with the
+	 * corresponding stored pseudonyms, calls the given function and exchanges the
+	 * pseudonyms in the returned Map back with the token. If useCallback is false,
+	 * it passes the arguments to the function and returns the result without any
+	 * exchanges.
+	 *
+	 * @param patients        Patients to be processed by the application.
+	 * @param processFunction Function to be called for the processing.
+	 * @param useCallback     Whether the callback function is active.
+	 * @return The result of the processFunction.
+	 */
+	public Map<String, Boolean> processPatients(final List<Patient> patients,
+			final Function<List<Patient>, Map<String, Boolean>> processFunction, final boolean useCallback) {
 		final Map<String, Boolean> result;
 
 		if (useCallback) {
@@ -165,8 +179,21 @@ public class PseudonymManager {
 
 		return result;
 	}
-	
-	public List<Patient> processRequest(final List<String> ids, final Function<List<String>,  List<Patient>> processFunction, final boolean useCallback) {
+
+	/**
+	 * Utility function to exchange the token with the corresponding pseudonyms. If
+	 * useCallback is true, it exchanges the tokens with the corresponding stored
+	 * pseudonyms, calls the given function and exchanges the pseudonyms of the
+	 * returned patients back with the token. If useCallback is false, it passes the
+	 * arguments to the function and returns the result without any exchanges.
+	 *
+	 * @param ids             Id's of the patients to be returned.
+	 * @param processFunction Function to return the requested patients.
+	 * @param useCallback     Whether the callback function is active.
+	 * @return Returned Patients of the processFunction.
+	 */
+	public List<Patient> processRequest(final List<String> ids,
+			final Function<List<String>, List<Patient>> processFunction, final boolean useCallback) {
 		final List<Patient> patients;
 
 		if (useCallback) {
@@ -181,7 +208,7 @@ public class PseudonymManager {
 				}
 			}
 
-			patients =  processFunction.apply(new ArrayList<String>(pseudonymsAndTokens.keySet()));
+			patients = processFunction.apply(new ArrayList<String>(pseudonymsAndTokens.keySet()));
 
 			for (final Patient patient : patients) {
 				patient.setPseudonym(pseudonymsAndTokens.get(patient.getPseudonym()));
@@ -189,7 +216,7 @@ public class PseudonymManager {
 
 		} else {
 			// ids are pseudonyms
-			patients =  processFunction.apply(ids);
+			patients = processFunction.apply(ids);
 		}
 
 		return patients;

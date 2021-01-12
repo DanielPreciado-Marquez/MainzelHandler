@@ -3,8 +3,7 @@ package de.wwu.imi.pseudonym.handler.core.model;
 import java.util.List;
 
 /**
- * Container class for the response of
- * {@link AbstractPseudonymizationController#getDepseudonymizationURL(List)}.
+ * Container class for the response of a depseudonymization URL request.
  * Contains the depseudonymization URL and a list of the invalid pseudonyms from
  * the corresponding request.
  */

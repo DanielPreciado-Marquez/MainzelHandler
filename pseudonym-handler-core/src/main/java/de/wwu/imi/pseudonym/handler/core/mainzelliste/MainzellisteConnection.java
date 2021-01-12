@@ -15,16 +15,51 @@ import org.slf4j.LoggerFactory;
 
 import de.wwu.imi.pseudonym.handler.core.exceptions.MainzellisteConnectionException;
 
+/**
+ * Represents a connection to the Mainzelliste. Stores all necessary
+ * informations to communicate with the Mainzelliste. Provides Methods for
+ * session management of sessions on the Mainzelliste.
+ */
 public class MainzellisteConnection {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MainzellisteConnection.class);
 
+	/**
+	 * URL to accept the callback request of the Mainzelliste.
+	 */
 	private String callbackUrl;
+
+	/**
+	 * API key of the Mainzelliste.
+	 */
 	private String apiKey;
+
+	/**
+	 * API version of the Mainzelliste to use.
+	 */
 	private String apiVersion;
+
+	/**
+	 * URL of the Mainzelliste.
+	 */
 	private String url;
+
+	/**
+	 * Whether the callback function of the Mainzelliste should be activated.
+	 */
 	private boolean useCallback;
 
+	/**
+	 * Constructs a new MainzellisteConnection.
+	 *
+	 * @param callbackUrl            URL to accept the callback request of the
+	 *                               Mainzelliste.
+	 * @param useCallback            Whether the callback function of the
+	 *                               Mainzelliste should be activated.
+	 * @param mainzellisteApiKey     API key of the Mainzelliste.
+	 * @param mainzellisteApiVersion API version of the Mainzelliste to use.
+	 * @param mainzellisteUrl        URL of the Mainzelliste.
+	 */
 	public MainzellisteConnection(final String callbackUrl, final boolean useCallback, final String mainzellisteApiKey,
 			final String mainzellisteApiVersion, final String mainzellisteUrl) {
 		this.callbackUrl = callbackUrl;
@@ -34,52 +69,85 @@ public class MainzellisteConnection {
 		this.useCallback = useCallback;
 	}
 
+	/**
+	 * @return URL to accept the callback request of the Mainzelliste.
+	 */
 	public String getCallbackUrl() {
 		return callbackUrl;
 	}
 
+	/**
+	 * @param callbackUrl New URL to accept the callback request of the
+	 *                    Mainzelliste.
+	 */
 	public void setCallbackUrl(String callbackUrl) {
 		this.callbackUrl = callbackUrl;
 	}
 
+	/**
+	 * @return API key of the Mainzelliste.
+	 */
 	public String getApiKey() {
 		return apiKey;
 	}
 
+	/**
+	 * @param apiKey New API key of the Mainzelliste.
+	 */
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;
 	}
 
+	/**
+	 * @return API version of the Mainzelliste to use.
+	 */
 	public String getApiVersion() {
 		return apiVersion;
 	}
 
+	/**
+	 * @param apiVersion New API version of the Mainzelliste to use.
+	 */
 	public void setApiVersion(String apiVersion) {
 		this.apiVersion = apiVersion;
 	}
 
+	/**
+	 * @return URL of the Mainzelliste.
+	 */
 	public String getUrl() {
 		return url;
 	}
 
-	public void setMainzellisteUrl(String url) {
+	/**
+	 * @param url New URL of the Mainzelliste.
+	 */
+	public void setUrl(String url) {
 		this.url = url;
 	}
 
+	/**
+	 * @return Whether the callback function of the Mainzelliste should be
+	 *         activated.
+	 */
 	public boolean isUseCallback() {
 		return useCallback;
 	}
 
+	/**
+	 * @param useCallback Whether the callback function of the Mainzelliste should
+	 *                    be activated.
+	 */
 	public void setUseCallback(boolean useCallback) {
 		this.useCallback = useCallback;
 	}
 
 	/**
-	 * Gets a session url with a valid session token from the Mainzelliste with
-	 * configured baseURL.
+	 * Creates a new session on the Mainzelliste and returns a corresponding
+	 * MaintellisteSession.
 	 *
 	 * @param httpClient A HTTP-Client for the connection.
-	 * @return The session url with a valid session token from the Mainzelliste.
+	 * @return New MaintellisteSession instance representing the new session.
 	 */
 	public MainzellisteSession createMainzellisteSession(final HttpClient httpClient) {
 		LOGGER.debug("Creating new session");
@@ -108,6 +176,14 @@ public class MainzellisteConnection {
 		return new MainzellisteSession(this, sessionId);
 	}
 
+	/**
+	 * Requests the session object from the Mainzelliste of the given session.
+	 *
+	 * @param httpClient          A HTTP-Client for the connection.
+	 * @param mainzellisteSession Corresponding MainzellisteSession of the session
+	 *                            on the Mainzelliste to return.
+	 * @return JSON representation of the session object.
+	 */
 	public JSONObject getMainzellisteSession(final HttpClient httpClient,
 			final MainzellisteSession mainzellisteSession) {
 		LOGGER.debug("Getting Mainzelliste session: " + mainzellisteSession.getSessionId());
@@ -137,6 +213,14 @@ public class MainzellisteConnection {
 		return jsonResponse;
 	}
 
+	/**
+	 * Deletes the corresponding session on the Mainzelliste of the given
+	 * MainzellisteSession.
+	 *
+	 * @param httpClient          A HTTP-Client for the connection.
+	 * @param mainzellisteSession Corresponding MainzellisteSession of the session
+	 *                            on the Mainzelliste to get deleted.
+	 */
 	public void deleteMainzellisteSession(final HttpClient httpClient, final MainzellisteSession mainzellisteSession) {
 		LOGGER.debug("Deleting Mainzelliste session: " + mainzellisteSession.getSessionId());
 

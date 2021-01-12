@@ -1,5 +1,8 @@
 package de.wwu.imi.pseudonym.handler.core.model;
 
+/**
+ * POJO class for the response of a pseudonymization URL request.
+ */
 public class PseudonymizationUrlResponse {
 
 	/**
