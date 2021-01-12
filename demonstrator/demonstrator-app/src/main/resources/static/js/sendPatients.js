@@ -1,18 +1,18 @@
 'use strict';
 
-import { PatientStatus, PseudonymHandler } from "./pseudonymHandler.js";
-import config from "./pseudonymHandlerConfig.js";
+import { PatientStatus, Mainzelhandler } from "./mainzelhandler.js";
+import config from "./mainzelhandlerConfig.js";
 
 /**
  * @type {Map<patientKey, Patient>}
  */
 var patients = new Map();
 var nextKey = 0;
-var pseudonymHandler;
+var mainzelhandler;
 
 window.onload = function () {
     config.serverURL = contextPath + requestPath;
-    pseudonymHandler = new PseudonymHandler(config);
+    mainzelhandler = new Mainzelhandler(config);
 
     updateList();
 
@@ -36,13 +36,13 @@ function createPatient() {
     // const birthYear = birthDate[0];
 
     try {
-        const idat = pseudonymHandler.createIDAT(patientForm["firstname-input"].value, patientForm["lastname-input"].value, birthDay, birthMonth, birthYear);
+        const idat = mainzelhandler.createIDAT(patientForm["firstname-input"].value, patientForm["lastname-input"].value, birthDay, birthMonth, birthYear);
 
         if (key !== "" && patients.has(key)) {
             const patient = patients.get(key);
-            pseudonymHandler.updateIDAT(patient, idat);
+            mainzelhandler.updateIDAT(patient, idat);
         } else {
-            const patient = pseudonymHandler.createPatient(idat, patientForm["mdat-input"].value);
+            const patient = mainzelhandler.createPatient(idat, patientForm["mdat-input"].value);
             patients.set(nextKey++, patient);
         }
 
@@ -63,7 +63,7 @@ function createPatient() {
 
 async function updatePseudonyms() {
     try {
-        await pseudonymHandler.sendPatients(patients);
+        await mainzelhandler.sendPatients(patients);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error.message;
         console.error(error);
@@ -185,7 +185,7 @@ function addRetryButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymHandler.sendPatients(patients, [key]);
+            await mainzelhandler.sendPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error.message;
         }
@@ -204,7 +204,7 @@ function addPseudonymizeButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymHandler.sendPatients(patients, [key]);
+            await mainzelhandler.sendPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error.message;
         }

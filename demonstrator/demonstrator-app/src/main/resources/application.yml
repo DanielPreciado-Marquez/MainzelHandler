@@ -1,4 +1,4 @@
-pseudonym-handler:
+mainzelhandler:
   mainzelliste:
     api:
       key: 123BachelorArbeit321
@@ -12,9 +12,8 @@ pseudonym-handler:
 logging:
   level:
     root: INFO
-  de:
-    wwu:
-      imi: DEBUG
+    de:
+      mainzelhandler: DEBUG
 
 server:
   port: 8081
