@@ -2,21 +2,21 @@ package de.wwu.imi.pseudonym.handler.core.model;
 
 public class PseudonymizationUrlRequest {
 
-	private Integer amount;
+	private Integer count;
 
 	public PseudonymizationUrlRequest() {
 	}
 
-	public PseudonymizationUrlRequest(final Integer amount) {
-		this.amount = amount;
+	public PseudonymizationUrlRequest(final Integer count) {
+		this.count = count;
 	}
 
-	public Integer getAmount() {
-		return amount;
+	public Integer getCount() {
+		return count;
 	}
 
-	public void setAmount(final Integer amount) {
-		this.amount = amount;
+	public void setCount(final Integer amount) {
+		this.count = amount;
 	}
 
 }

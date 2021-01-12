@@ -55,7 +55,7 @@ public class TokenController implements TokenInterface {
 	public PseudonymizationUrlResponse getPseudonymizationUrl(@RequestBody final PseudonymizationUrlRequest request) {
 		final HttpClient httpClient = HttpClientBuilder.create().build();
 		final MainzellisteSession session = mainzellisteConnection.createMainzellisteSession(httpClient);
-		return session.createAddPatientTokens(httpClient, request.getAmount());
+		return session.createAddPatientTokens(httpClient, request.getCount());
 	}
 
 	/**

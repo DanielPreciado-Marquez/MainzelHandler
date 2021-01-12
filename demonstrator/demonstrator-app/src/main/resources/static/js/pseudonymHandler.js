@@ -586,14 +586,14 @@ function PseudonymHandler(pseudonymHandlerConfig) {
     }
 
     /**
-     * Creates the given amount of pseudonymization urls.
+     * Creates the given number of pseudonymization urls.
      * One url contains one token and can be used for the pseudonymization of one patient.
      * The URL gets invalid after some time specified in the Mainzelliste configuration.
-     * @param {number} amount Amount of requested pseudonymization urls.
+     * @param {number} count Number of requested pseudonymization urls.
      * @returns {Promise<{useCallback: boolean; urlTokens: string[];}>} Array containing the urls.
      * @throws Throws an exception if the server is not available.
      */
-    async function getPseudonymizationURL(amount) {
+    async function getPseudonymizationURL(count) {
         const requestURL = serverURL + "/tokens/addPatient";
 
         const options = {
@@ -601,7 +601,7 @@ function PseudonymHandler(pseudonymHandlerConfig) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ amount })
+            body: JSON.stringify({ count })
         };
 
         const response = await fetch(requestURL, options);
