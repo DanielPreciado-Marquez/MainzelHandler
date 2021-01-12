@@ -7,7 +7,7 @@
     <title>Batch-Tests</title>
     <link rel="stylesheet" th:href="@{/css/qunit-2.11.3.css}">
     <script type="text/javascript" th:src="@{/js/qunit-2.11.3.js}"></script>
-    <script type="module" th:src="@{/js/pseudonymHandlerBatchTest.js}"></script>
+    <script type="module" th:src="@{/js/mainzelhandlerBatchTest.js}"></script>
 </head>
 
 <body>
@@ -17,7 +17,8 @@
 
 <script type="text/javascript" th:inline="javascript">
     const contextPath = /*[[${@environment.getProperty('server.servlet.context-path')}]]*/ '/';
-    const requestPath = /*[[${@environment.getProperty('pseudonym-handler.request-path')}]]*/ '/';
+    let requestPath = /*[[${@environment.getProperty('mainzelhandler.request-path')}]]*/ '/';
+    requestPath ??= "";
 </script>
 
 </html>

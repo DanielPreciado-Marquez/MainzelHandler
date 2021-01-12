@@ -1,12 +1,14 @@
 'use strict'
 
-import { PseudonymHandler } from "./pseudonymHandler.js";
+import { Mainzelhandler } from "./mainzelhandler.js";
+import config from "./mainzelhandlerConfig.js";
 
 var pseudonyms = [];
-var pseudonymHandler;
+var mainzelhandler;
 
 window.onload = function () {
-    pseudonymHandler = new PseudonymHandler(contextPath + requestPath);
+    config.serverURL = contextPath + requestPath;
+    mainzelhandler = new Mainzelhandler(config);
 
     updateList();
 
@@ -26,10 +28,11 @@ async function updatePseudonyms() {
     document.getElementById("server-error").innerHTML = "";
 
     try {
-        const { depseudonymized, invalid } = await pseudonymHandler.depseudonymize(pseudonyms);
+        const { depseudonymized, invalid } = await mainzelhandler.depseudonymize(pseudonyms);
         updateList(depseudonymized, invalid);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error.message;
+        console.log(error);
     }
 }
 

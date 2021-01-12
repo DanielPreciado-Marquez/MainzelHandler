@@ -1,9 +1,9 @@
-pseudonym-handler:
+mainzelhandler:
   mainzelliste:
-    url: http://host.docker.internal:8080/
     api:
       key: 123BachelorArbeit321
       version: 3.0
+    url: http://host.docker.internal:8080
   pseudonym-timeout: 600000
   request-path: /api
   url: http://host.docker.internal
@@ -12,9 +12,8 @@ pseudonym-handler:
 logging:
   level:
     root: INFO
-  de:
-    wwu:
-      imi: DEBUG
+    de:
+      mainzelhandler: DEBUG
 
 server:
   port: 8081

@@ -4,34 +4,36 @@
 
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>de.wwu.imi</groupId>
+	<groupId>de.mainzelhandler</groupId>
 	<artifactId>demonstrator-app</artifactId>
-	<version>1.0.2</version>
+	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>demonstrator-app</name>
-	<description>Spring app for demonstrating the pseudonym-handler library</description>
+	<name>mainzelhandler-demonstrator-app</name>
+	<description>Spring app for demonstrating the mainzelhandler-backend-spring library</description>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<java.version>11</java.version>
+		<maven.compiler.source>${java.version}</maven.compiler.source>
+		<maven.compiler.target>${java.version}</maven.compiler.target>
 	</properties>
 
 	<repositories>
 		<repository>
-			<id>pseudonym-handler</id>
+			<id>mainzelhandler</id>
 			<url>https://imigitlab.uni-muenster.de/api/v4/projects/236/packages/maven</url>
 		</repository>
 	</repositories>
 
 	<distributionManagement>
 		<repository>
-			<id>pseudonym-handler</id>
+			<id>mainzelhandler</id>
 			<url>https://imigitlab.uni-muenster.de/api/v4/projects/236/packages/maven</url>
 		</repository>
 		<snapshotRepository>
-			<id>pseudonym-handler</id>
+			<id>mainzelhandler</id>
 			<url>https://imigitlab.uni-muenster.de/api/v4/projects/236/packages/maven</url>
 		</snapshotRepository>
 	</distributionManagement>
@@ -64,9 +66,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>de.wwu.imi</groupId>
-			<artifactId>pseudonym-handler</artifactId>
-			<version>1.0.2</version>
+			<groupId>de.mainzelhandler</groupId>
+			<artifactId>backend-spring</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>

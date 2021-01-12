@@ -1,16 +1,18 @@
 'use strict';
 
-import { PatientStatus, PseudonymHandler } from "./pseudonymHandler.js";
+import { PatientStatus, Mainzelhandler } from "./mainzelhandler.js";
+import config from "./mainzelhandlerConfig.js";
 
 /**
  * @type {Map<patientKey, Patient>}
  */
 var patients = new Map();
 var nextKey = 0;
-var pseudonymHandler;
+var mainzelhandler;
 
 window.onload = function () {
-    pseudonymHandler = new PseudonymHandler(contextPath + requestPath);
+    config.serverURL = contextPath + requestPath;
+    mainzelhandler = new Mainzelhandler(config);
 
     updateList();
 
@@ -23,12 +25,24 @@ function createPatient() {
     const patientForm = document.getElementById("patient-form");
     const key = parseInt(patientForm["key-input"].value);
 
+    const birthDate = new Date(patientForm["birthday-input"].value);
+    const birthDay = birthDate.getDate();
+    const birthMonth = birthDate.getMonth();
+    const birthYear = birthDate.getFullYear();
+
+    // const birthDate = patientForm["birthday-input"].value.split('-');
+    // const birthDay = birthDate[2];
+    // const birthMonth = birthDate[1];
+    // const birthYear = birthDate[0];
+
     try {
+        const idat = mainzelhandler.createIDAT(patientForm["firstname-input"].value, patientForm["lastname-input"].value, birthDay, birthMonth, birthYear);
+
         if (key !== "" && patients.has(key)) {
             const patient = patients.get(key);
-            pseudonymHandler.updateIDAT(patient, patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value);
+            mainzelhandler.updateIDAT(patient, idat);
         } else {
-            const patient = pseudonymHandler.createPatient(patientForm["firstname-input"].value, patientForm["lastname-input"].value, patientForm["birthday-input"].value, patientForm["mdat-input"].value);
+            const patient = mainzelhandler.createPatient(idat, patientForm["mdat-input"].value);
             patients.set(nextKey++, patient);
         }
 
@@ -43,14 +57,16 @@ function createPatient() {
         updateList();
     } catch (error) {
         document.getElementById("idat-error").innerHTML = error.message;
+        console.error(error);
     }
 }
 
 async function updatePseudonyms() {
     try {
-        await pseudonymHandler.sendPatients(patients);
+        await mainzelhandler.sendPatients(patients);
     } catch (error) {
         document.getElementById("server-error").innerHTML = error.message;
+        console.error(error);
     }
 
     updateList();
@@ -169,7 +185,7 @@ function addRetryButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymHandler.sendPatients(patients, [key]);
+            await mainzelhandler.sendPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error.message;
         }
@@ -188,7 +204,7 @@ function addPseudonymizeButton(key, listElement) {
         document.getElementById("server-error").innerHTML = "";
 
         try {
-            await pseudonymHandler.sendPatients(patients, [key]);
+            await mainzelhandler.sendPatients(patients, [key]);
         } catch (error) {
             document.getElementById("server-error").innerHTML = error.message;
         }
