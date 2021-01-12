@@ -41,3 +41,4 @@ demonstrator/demonstrator-app/logs/
 demonstrator/test-env/
 application-dev.yml
 application-test.yml
+demonstrator/demonstrator-app/settings.xml
