@@ -5,9 +5,10 @@ networks:
 
 services:
     demonstrator-db:
-        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-db:1.0.3
+        #image: docker.pkg.github.com/danielpreciado-marquez/mainzelhandler/mainzelhandler-demonstrator-db:0.0.1
+        image: ghcr.io/danielpreciado-marquez/mainzelhandler-demonstrator-db:0.0.1
         build:
-            context: ./demonstrator-db/
+            context: ./db/
         container_name: demonstrator-db
         restart: always
         ports:
@@ -17,14 +18,14 @@ services:
         volumes:
             - ./volumes/demonstrator-db/data:/var/lib/mysql
     demonstrator-app:
-        image: imidocker.uni-muenster.de/abschlussarbeiten/ba_daniel_preciado-marquez/demonstrator-app:1.0.3
+        #image: docker.pkg.github.com/danielpreciado-marquez/mainzelhandler/mainzelhandler-demonstrator-app:0.0.1
+        image: ghcr.io/danielpreciado-marquez/mainzelhandler-demonstrator-app:0.0.1
         build:
-            context: ./demonstrator-app/
+            context: ./app/
         container_name: demonstrator-app
         restart: always
         ports:
             - "8081:8081"
-            - "8082:8082"
         networks:
             - demonstrator-network
         environment:

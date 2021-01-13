@@ -37,8 +37,8 @@ build/
 .recommenders/
 
 ### Local Testing/ Debugging ###
-demonstrator/demonstrator-app/logs/
-demonstrator/test-env/
+mainzelhandler-demonstrator/app/logs/
+mainzelhandler-demonstrator/app/settings.xml
+mainzelhandler-demonstrator/test-env/
 application-dev.yml
 application-test.yml
-demonstrator/demonstrator-app/settings.xml
