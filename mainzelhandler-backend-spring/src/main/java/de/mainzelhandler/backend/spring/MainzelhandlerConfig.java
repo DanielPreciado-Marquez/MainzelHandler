@@ -11,6 +11,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Configuration
 @ComponentScan({ "de.mainzelhandler.backend.spring.services", "de.mainzelhandler.backend.spring.controller" })
 @EnableScheduling
-public class PseudonymHandlerConfig {
+public class MainzelhandlerConfig {
 
 }
