@@ -1,13 +1,9 @@
-mainzelhandler:
-  mainzelliste:
-    api:
-      key: 123BachelorArbeit321
-      version: 3.0
-    url: http://host.docker.internal:8080
-  pseudonym-timeout: 600000
-  request-path: /api
-  url: http://host.docker.internal
-  useCallback: false
+# mainzelhandler:
+#   mainzelliste:
+#     url:
+#     api:
+#       key:
+#   url:
 
 logging:
   level:
