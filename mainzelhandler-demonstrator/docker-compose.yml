@@ -30,5 +30,8 @@ services:
             - demonstrator-network
         environment:
             - SPRING_DATASOURCE_URL=jdbc:mysql://demonstrator-db/demonstrator_db
+            #- MAINZELHANDLER_MAINZELLISTE_URL=
+            #- MAINZELHANDLER_MAINZELLISTE_API_KEY=
+            #- MAINZELHANDLER_URL=
         depends_on:
             - demonstrator-db
