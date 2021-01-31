@@ -239,7 +239,7 @@ function Mainzelhandler(mainzelhandlerConfig) {
      * @param {patientKey[]} [patientKeys] Array of patientKeys of the patients to be considered.
      * @returns {patientKey[]} Ids of the found patients.
      */
-    mainzelhandler.getPatients = function (patients, patientStatus, patientKeys) {
+    mainzelhandler.filterPatients = function (patients, patientStatus, patientKeys) {
         if (!Array.isArray(patientStatus))
             patientStatus = [patientStatus];
 
