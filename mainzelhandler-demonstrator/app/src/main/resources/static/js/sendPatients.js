@@ -106,11 +106,11 @@ function updateList() {
                 addDeleteButton(key, listElement);
                 break;
             case PatientStatus.PROCESSED:
-                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Gespeichert, Patient: " + JSON.stringify(patient.idat) + ", Daten: " + patient.mdat + ", Pseudonym: " + patient.pseudonym));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Gespeichert, Patient: " + JSON.stringify(patient.idat) + ", Pseudonym: " + patient.pseudonym + ", Daten: " + patient.mdat));
                 addDeleteButton(key, listElement);
                 break;
             case PatientStatus.NOT_PROCESSED:
-                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Nicht Gespeichert, Patient: " + JSON.stringify(patient.idat) + ", Daten: " + patient.mdat + ", Pseudonym: " + patient.pseudonym));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Nicht Gespeichert, Patient: " + JSON.stringify(patient.idat) + ", Pseudonym: " + patient.pseudonym + ", Daten: " + patient.mdat));
                 addDeleteButton(key, listElement);
                 break;
         }

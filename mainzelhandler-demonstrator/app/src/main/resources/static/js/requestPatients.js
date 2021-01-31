@@ -108,12 +108,12 @@ function updateList() {
                 break;
 
             case PatientStatus.FOUND:
-                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Gefunden, Patient: " + JSON.stringify(patient.idat) + ", MDAT:" + patient.mdat));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Gefunden, Patient: " + JSON.stringify(patient.idat) + ", Pseudonym: " + patient.pseudonym + ", MDAT:" + patient.mdat));
                 addDeleteButton(key, listElement);
                 break;
 
             case PatientStatus.NOT_FOUND:
-                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Nicht Gefunden, Patient: " + JSON.stringify(patient.idat)));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Nicht Gefunden, Patient: " + JSON.stringify(patient.idat) + ", Pseudonym: " + patient.pseudonym));
                 addDeleteButton(key, listElement);
                 break;
 
