@@ -520,7 +520,7 @@ QUnit.module('updateMDAT', () => {
 
 });
 
-QUnit.module('getPatients', hooks => {
+QUnit.module('filterPatients', hooks => {
 
     let patients;
 
@@ -547,7 +547,7 @@ QUnit.module('getPatients', hooks => {
     QUnit.test('Find one status', assert => {
         assert.expect(3);
 
-        const result = mainzelhandler.getPatients(patients, PatientStatus.PSEUDONYMIZED);
+        const result = mainzelhandler.filterPatients(patients, PatientStatus.PSEUDONYMIZED);
 
         assert.strictEqual(result.length, 2, "Check amount of found patients");
         assert.true(result.includes(0), "Found patient 0");
@@ -557,7 +557,7 @@ QUnit.module('getPatients', hooks => {
     QUnit.test('Find multiple status', assert => {
         assert.expect(4);
 
-        const result = mainzelhandler.getPatients(patients, [PatientStatus.PSEUDONYMIZED, PatientStatus.IDAT_CONFLICT]);
+        const result = mainzelhandler.filterPatients(patients, [PatientStatus.PSEUDONYMIZED, PatientStatus.IDAT_CONFLICT]);
 
         assert.strictEqual(result.length, 3, "Check amount of found patients");
         assert.true(result.includes(0), "Found patient 0");
@@ -568,7 +568,7 @@ QUnit.module('getPatients', hooks => {
     QUnit.test('Find multiple status from subset', assert => {
         assert.expect(2);
 
-        const result = mainzelhandler.getPatients(patients, [PatientStatus.PSEUDONYMIZED, PatientStatus.IDAT_CONFLICT], [0, 3]);
+        const result = mainzelhandler.filterPatients(patients, [PatientStatus.PSEUDONYMIZED, PatientStatus.IDAT_CONFLICT], [0, 3]);
 
         assert.strictEqual(result.length, 1, "Check amount of found patients");
         assert.true(result.includes(0), "Found patient 0");
