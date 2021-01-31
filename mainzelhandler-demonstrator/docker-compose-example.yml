@@ -1,0 +1,69 @@
+version: '3.8'
+
+networks:
+    demonstrator-network:
+    mainzelliste-network:
+
+services:
+    mainzelliste-db:
+        image: postgres:9.5-alpine
+        container_name: mainzelliste-db
+        restart: always
+        networks:
+            - mainzelliste-network
+        environment:
+            - POSTGRES_DB=mainzelliste
+            - POSTGRES_USER=mainzelliste
+            - POSTGRES_PASSWORD=PleasePutASafePasswordHere
+        volumes:
+            - ./volumes/mainzelliste-db/data:/var/lib/mysql
+    mainzelliste:
+        image: medicalinformatics/mainzelliste:1.8-latest
+        container_name: mainzelliste
+        restart: always
+        ports:
+            - 8080:8080
+        networks:
+            - mainzelliste-network
+            - demonstrator-network
+        environment:
+            - ML_REVERSEPROXY_FQDN=host.docker.internal
+            - ML_REVERSEPROXY_PORT=8080
+            - ML_DB_PASS=PleasePutASafePasswordHere # ignored
+            - ML_API_KEY=123BachelorArbeit321 # ignored
+            - DEBUG=true
+        secrets:
+            - mainzellisteConfig
+        depends_on:
+            - mainzelliste-db
+    demonstrator-db:
+        image: ghcr.io/danielpreciado-marquez/mainzelhandler-demonstrator-db:0.0.1
+        container_name: demonstrator-db
+        restart: always
+        ports:
+            - "3306:3306"
+        networks:
+            - demonstrator-network
+        volumes:
+            - ./volumes/demonstrator-db/data:/var/lib/mysql
+    demonstrator-app:
+        image: ghcr.io/danielpreciado-marquez/mainzelhandler-demonstrator-app:0.0.1
+        container_name: demonstrator-app
+        restart: always
+        ports:
+            - "8081:8081"
+        networks:
+            - demonstrator-network
+        environment:
+            - SPRING_DATASOURCE_URL=jdbc:mysql://demonstrator-db/demonstrator_db
+            - MAINZELHANDLER_MAINZELLISTE_URL=http://host.docker.internal:8080
+            - MAINZELHANDLER_MAINZELLISTE_API_KEY=123BachelorArbeit321
+            - MAINZELHANDLER_URL=http://demonstrator-app
+            - LOGGING_LEVEL_DE_MAINZELHANDLER=DEBUG
+        depends_on:
+            - demonstrator-db
+            - mainzelliste
+
+secrets:
+    mainzellisteConfig:
+        file: ./mainzelliste.conf
