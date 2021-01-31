@@ -47,7 +47,7 @@ services:
         volumes:
             - ./volumes/demonstrator-db/data:/var/lib/mysql
     demonstrator-app:
-        image: ghcr.io/danielpreciado-marquez/mainzelhandler-demonstrator-app:0.0.1
+        image: ghcr.io/danielpreciado-marquez/mainzelhandler-demonstrator-app:0.0.2
         container_name: demonstrator-app
         restart: always
         ports:
