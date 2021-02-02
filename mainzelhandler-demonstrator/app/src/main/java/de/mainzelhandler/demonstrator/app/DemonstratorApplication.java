@@ -7,10 +7,10 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-import de.mainzelhandler.backend.spring.PseudonymHandlerConfig;
+import de.mainzelhandler.backend.spring.MainzelhandlerConfig;
 
 @SpringBootApplication
-@Import(PseudonymHandlerConfig.class)
+@Import(MainzelhandlerConfig.class)
 @EntityScan("de.mainzelhandler.demonstrator.app.entities")
 @EnableJpaRepositories
 @ComponentScan("de.mainzelhandler.demonstrator.app.controller")

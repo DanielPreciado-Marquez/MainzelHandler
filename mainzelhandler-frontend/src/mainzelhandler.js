@@ -203,6 +203,13 @@ function Mainzelhandler(mainzelhandlerConfig) {
             }
             else if (typeof value !== field.type)
                 throw new Error("Field with name '" + idatField + "' of the type '" + typeof value + "' must be of the type '" + field.type + "'!");
+
+            if (typeof value === 'number') {
+                if (isNaN(value))
+                    throw new Error("Field with name '" + idatField + "' of the type '" + typeof value + "' is NaN!");
+            }
+            else if (field.required && value === "")
+                throw new Error("Field with name '" + idatField + "' of the type '" + typeof value + "' is required and empty!");
         }
 
         for (const key in idat)
@@ -232,7 +239,7 @@ function Mainzelhandler(mainzelhandlerConfig) {
      * @param {patientKey[]} [patientKeys] Array of patientKeys of the patients to be considered.
      * @returns {patientKey[]} Ids of the found patients.
      */
-    mainzelhandler.getPatients = function (patients, patientStatus, patientKeys) {
+    mainzelhandler.filterPatients = function (patients, patientStatus, patientKeys) {
         if (!Array.isArray(patientStatus))
             patientStatus = [patientStatus];
 

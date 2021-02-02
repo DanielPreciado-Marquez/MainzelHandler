@@ -106,11 +106,11 @@ function updateList() {
                 addDeleteButton(key, listElement);
                 break;
             case PatientStatus.PROCESSED:
-                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Gespeichert, Patient: " + JSON.stringify(patient.idat) + ", Daten: " + patient.mdat + ", Pseudonym: " + patient.pseudonym));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Gespeichert, Patient: " + JSON.stringify(patient.idat) + ", Pseudonym: " + patient.pseudonym + ", Daten: " + patient.mdat));
                 addDeleteButton(key, listElement);
                 break;
             case PatientStatus.NOT_PROCESSED:
-                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Nicht Gespeichert, Patient: " + JSON.stringify(patient.idat) + ", Daten: " + patient.mdat + ", Pseudonym: " + patient.pseudonym));
+                listElement.appendChild(document.createTextNode("Schlüssel: " + key + ", Status: Nicht Gespeichert, Patient: " + JSON.stringify(patient.idat) + ", Pseudonym: " + patient.pseudonym + ", Daten: " + patient.mdat));
                 addDeleteButton(key, listElement);
                 break;
         }
@@ -141,8 +141,8 @@ function addEditButton(key, listElement) {
     const patient = patients.get(key);
 
     editButton.addEventListener("click", () => {
-        let month = (patient.idat.birthday.getMonth() + 1).toString();
-        let day = patient.idat.birthday.getDate().toString();
+        let month = (patient.idat.geburtsmonat + 1).toString();
+        let day = patient.idat.geburtstag.toString();
 
         if (month.length === 1) {
             month = "0" + month;
@@ -152,12 +152,12 @@ function addEditButton(key, listElement) {
             day = "0" + day;
         }
 
-        const dateString = patient.idat.birthday.getFullYear() + "-" + month + "-" + day;
+        const dateString = patient.idat.geburtsjahr + "-" + month + "-" + day;
 
         const patientForm = document.getElementById("patient-form");
         patientForm["key-input"].value = key;
-        patientForm["firstname-input"].value = patient.idat.firstname;
-        patientForm["lastname-input"].value = patient.idat.lastname;
+        patientForm["firstname-input"].value = patient.idat.vorname;
+        patientForm["lastname-input"].value = patient.idat.nachname;
         patientForm["birthday-input"].value = dateString;
     });
 

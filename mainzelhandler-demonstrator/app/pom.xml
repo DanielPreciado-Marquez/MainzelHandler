@@ -6,7 +6,7 @@
 
 	<groupId>de.mainzelhandler</groupId>
 	<artifactId>demonstrator-app</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>mainzelhandler-demonstrator-app</name>
@@ -58,7 +58,7 @@
 		<dependency>
 			<groupId>de.mainzelhandler</groupId>
 			<artifactId>backend-spring</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>0.0.2-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>

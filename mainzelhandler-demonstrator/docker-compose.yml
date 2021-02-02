@@ -18,8 +18,8 @@ services:
         volumes:
             - ./volumes/demonstrator-db/data:/var/lib/mysql
     demonstrator-app:
-        #image: docker.pkg.github.com/danielpreciado-marquez/mainzelhandler/mainzelhandler-demonstrator-app:0.0.1
-        image: ghcr.io/danielpreciado-marquez/mainzelhandler-demonstrator-app:0.0.1
+        #image: docker.pkg.github.com/danielpreciado-marquez/mainzelhandler/mainzelhandler-demonstrator-app:0.0.2
+        image: ghcr.io/danielpreciado-marquez/mainzelhandler-demonstrator-app:0.0.2
         build:
             context: ./app/
         container_name: demonstrator-app
@@ -30,5 +30,8 @@ services:
             - demonstrator-network
         environment:
             - SPRING_DATASOURCE_URL=jdbc:mysql://demonstrator-db/demonstrator_db
+            #- MAINZELHANDLER_MAINZELLISTE_URL=
+            #- MAINZELHANDLER_MAINZELLISTE_API_KEY=
+            #- MAINZELHANDLER_URL=
         depends_on:
             - demonstrator-db

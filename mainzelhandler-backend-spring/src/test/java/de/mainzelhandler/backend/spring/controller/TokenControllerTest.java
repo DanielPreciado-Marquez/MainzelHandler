@@ -16,10 +16,10 @@ import de.mainzelhandler.backend.core.model.DepseudonymizationUrlRequest;
 import de.mainzelhandler.backend.core.model.DepseudonymizationUrlResponse;
 import de.mainzelhandler.backend.core.model.PseudonymizationUrlRequest;
 import de.mainzelhandler.backend.core.model.PseudonymizationUrlResponse;
-import de.mainzelhandler.backend.spring.PseudonymHandlerConfig;
+import de.mainzelhandler.backend.spring.MainzelhandlerConfig;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes=PseudonymHandlerConfig.class)
+@SpringBootTest(classes=MainzelhandlerConfig.class)
 class TokenControllerTest {
 
 	@Value("${mainzelhandler.mainzelliste.url}")
